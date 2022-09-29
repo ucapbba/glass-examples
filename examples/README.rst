@@ -1,6 +1,7 @@
 
-Examples
-========
+Examples for GLASS
+==================
 
-These examples show how GLASS can be used in practice, and can be a good
-starting point for more complicated and realistic simulations.
+These examples show how GLASS, the Generator for Large Scale Structure, can be
+used in practice.  They are often a good starting point for more complicated and
+realistic simulations.

@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-sys.path.insert(0, os.path.abspath('..'))
+#import os
+#import sys
+#sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -28,10 +28,8 @@ author = 'Nicolas Tessore'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'numpydoc',
     'sphinx.ext.intersphinx',
     'sphinx_gallery.gen_gallery',
-    'sphinxcontrib.mermaid',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -60,11 +58,23 @@ html_logo = '_static/glass.png'
 html_favicon = '_static/glass.ico'
 
 html_theme_options = {
+    'external_links': [
+        {
+            'name': 'GLASS documentation',
+            'url': 'https://glass.readthedocs.io',
+        },
+    ],
     'icon_links': [
         {
+            'name': 'GLASS Documentation',
+            'url': 'https://glass.readthedocs.io',
+            'icon': 'fas fa-bullseye',
+            'type': 'fontawesome',
+        },
+        {
             'name': 'GitHub',
-            'url': 'https://github.com/astro-ph/glass',
-            'icon': 'fab fa-github-square',
+            'url': 'https://github.com/glass-dev/examples',
+            'icon': 'fab fa-github',
             'type': 'fontawesome',
         },
     ],
@@ -82,23 +92,24 @@ html_css_files = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
+    'glass': ('https://glass.readthedocs.org/en/latest/', None),
 }
 
 
 # -- Sphinx Gallery ----------------------------------------------------------
 
-from sphinx_gallery.sorting import ExampleTitleSortKey  # noqa: E402
+from sphinx_gallery.sorting import ExplicitOrder, ExampleTitleSortKey  # noqa: E402
 
 sphinx_gallery_conf = {
-    'examples_dirs': '../examples',
-    'gallery_dirs': 'examples',
+    'examples_dirs': ['../examples'],
+    'gallery_dirs': '.',
     'filename_pattern': r'/.*\.py',
     'ignore_pattern': r'/_',
+    'subsection_order': ExplicitOrder([
+        '../examples/basic',
+        '../examples/advanced',
+    ]),
     'within_subsection_order': ExampleTitleSortKey,
-    'reference_url': {
-        # FIXME: issue with sphinx v5.?.? and sphinx-gallery
-        # 'glass': None,
-    },
     'download_all_examples': False,
     'image_srcset': ['2x'],
     'show_signature': False,
