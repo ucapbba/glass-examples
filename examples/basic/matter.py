@@ -16,9 +16,9 @@ import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and the glass meta-module
+# these are the GLASS imports: cosmology and everything in the glass namespace
 from cosmology import LCDM
-from glass import glass
+import glass.all
 
 # also needs camb itself to get the parameter object
 import camb
@@ -67,8 +67,8 @@ ax.axis('off')
 
 # simulate and project an annulus of each matter shell onto the grid
 for shell in glass.sim.generate(generators):
-    rmin, rmax = cosmo.xc(shell['zmin', 'zmax'])
-    delt = shell['delta']
+    rmin, rmax = cosmo.xc(shell[glass.sim.ZMIN, glass.sim.ZMAX])
+    delt = shell[glass.matter.DELTA]
     g = (rmin <= r) & (r < rmax)
     z = np.sqrt(1 - (r[g]/rmax)**2)
     theta, phi = hp.vec2ang(np.transpose([x[g]/rmax, y[g]/rmax, z]))

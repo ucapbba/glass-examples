@@ -9,21 +9,27 @@ This example shows how to implement and use a new model.
 # %%
 # Setup
 # -----
-# The setup here is the same as in the :ref:`sphx_glr_examples_1_basic_plot_density.py`
-# example, except that we use fewer galaxies and only a single matter shell.
+# The setup here is the same as in the :doc:`/basic/plot_density` example,
+# except that we use fewer galaxies and only a single matter shell.
 
 import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and the glass meta-module
-from glass import glass
+# import everything in the glass namespace
+import glass.all
 
 # also needs camb itself to get the parameter object
 import camb
 
-# this decorator marks generators in GLASS
-from glass.core import generator
+# decorator for GLASS generators
+from glass.generator import generator
+
+# import some variable names from other GLASS modules
+# you do not have to do this, you can use their string values themselves
+# but we generally do this to make life easier and prevent mistakes
+from glass.matter import DELTA
+from glass.galaxies import GAL_LON, GAL_LAT
 
 
 # cosmology for the simulation
@@ -36,23 +42,19 @@ nside = 128
 lmax = nside
 
 # galaxy density
-n_arcmin2 = 1e-5
-
-# flat source distribution with given angular density
-z = np.linspace(0, 0.1, 11)
-dndz = np.ones_like(z)
-dndz *= n_arcmin2/np.trapz(dndz, z)
+n_arcmin2 = 1e-6
 
 # set up CAMB parameters for matter angular power spectrum
 pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for a galaxies-only simulation
 generators = [
-    glass.sim.zspace(z[0], z[-1]+0.01, dz=0.1),
+    glass.sim.zspace(0., 1., dz=0.1),
     glass.matter.mat_wht_redshift(),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
-    glass.galaxies.gal_dist_fullsky(z, dndz),
+    glass.galaxies.gal_density_const(n_arcmin2),
+    glass.galaxies.gal_positions_unif(),
 ]
 
 # %%
@@ -65,14 +67,20 @@ generators = [
 # all GLASS models, it is implemented as a simple Python generator.  The model
 # can take global parameters, here a ``thresh`` value for the threshold at
 # which matter is considered overdense.  The generator then runs in a loop: At
-# each iteration of the simulation, it receives the matter density ``delta``
-# and galaxy positions ``gal_lon, gal_lat``.  It then yields the newly computed
-# overdensity flag ``gal_od_flag`` provided by the model.
+# each iteration of the simulation, it receives the matter density ``DELTA``
+# and galaxy positions ``GAL_LON``, ``GAL_LAT``.  It then yields the newly
+# computed overdensity flag ``GAL_OD_FLAG`` provided by the model.
 
+# define a new variable for this example
+# you could also just pass the string value, but we usually define these
+GAL_OD_FLAG = 'galaxy overdensity flags'
 
-# the decorator marks this as a GLASS generator
-# its signature determines the inputs and outputs
-@generator('delta, gal_lon, gal_lat -> gal_od_flag')
+# the decorator labels the inputs and outputs of this generator
+# here we use the imported variable names from the GLASS modules
+# but you could also provide their string values
+@generator(
+    receives=(DELTA, GAL_LON, GAL_LAT),
+    yields=GAL_OD_FLAG)
 def gal_od_flag_model(thresh=0.):
 
     # initial yield
@@ -113,9 +121,9 @@ lon, lat, od_flag = np.empty(0), np.empty(0), np.empty(0, dtype=bool)
 
 # simulate and add galaxies in each iteration to lists
 for it in glass.sim.generate(generators):
-    lon = np.append(lon, it['gal_lon'])
-    lat = np.append(lat, it['gal_lat'])
-    od_flag = np.append(od_flag, it['gal_od_flag'])
+    lon = np.append(lon, it[GAL_LON])
+    lat = np.append(lat, it[GAL_LAT])
+    od_flag = np.append(od_flag, it[GAL_OD_FLAG])
 
 
 # %%

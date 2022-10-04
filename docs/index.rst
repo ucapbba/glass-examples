@@ -149,7 +149,7 @@ More advanced examples, combining multiple interacting generators.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example simulates a galaxy catalogue with shears affected by weak lensing, combining the s...">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example simulates a galaxy catalogue with shears affected by weak lensing, combining the /...">
 
 .. only:: html
 

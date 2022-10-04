@@ -24,3 +24,9 @@ html-noplot:
 	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(SOURCEDIR) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+
+# Extra target to clean gallery files
+.PHONY: clean-gallery
+clean: clean-gallery
+clean-gallery:
+	$(RM) -r basic advanced

@@ -12,16 +12,16 @@ works as intended.
 # %%
 # Setup
 # -----
-# Set up a galaxy positions-only GLASS simulation.  It needs very little:
+# Set up a galaxy positions-only GLASS simulation.  It needs very little input:
 # a way to obtain matter angular power spectra (here: CAMB) and a redshift
 # distribution of galaxies to sample from (here: uniform in volume).
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and the glass meta-module
+# these are the GLASS imports: cosmology and everything in the glass namespace
 from cosmology import LCDM
-from glass import glass
+import glass.all
 
 # also needs camb itself to get the parameter object
 import camb
@@ -55,7 +55,9 @@ generators = [
     glass.matter.mat_wht_density(cosmo),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
-    glass.galaxies.gal_dist_fullsky(z, dndz),
+    glass.galaxies.gal_density_dndz(z, dndz),
+    glass.galaxies.gal_positions_unif(),
+    glass.galaxies.gal_redshifts_nz(),
 ]
 
 
@@ -74,8 +76,9 @@ cube = np.zeros((xbin.size-1,)*3)
 
 # simulate and add galaxies in each matter shell to cube
 for shell in glass.sim.generate(generators):
-    rgal = cosmo.xc(shell['gal_z'])
-    lon, lat = np.deg2rad(shell['gal_lon']), np.deg2rad(shell['gal_lat'])
+    rgal = cosmo.xc(shell[glass.galaxies.GAL_Z])
+    lon = np.deg2rad(shell[glass.galaxies.GAL_LON])
+    lat = np.deg2rad(shell[glass.galaxies.GAL_LAT])
     x1 = rgal*np.cos(lon)*np.cos(lat)
     x2 = rgal*np.sin(lon)*np.cos(lat)
     x3 = rgal*np.sin(lat)

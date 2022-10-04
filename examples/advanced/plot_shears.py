@@ -3,9 +3,8 @@ Galaxy shear
 ============
 
 This example simulates a galaxy catalogue with shears affected by weak lensing,
-combining the :ref:`sphx_glr_examples_1_basic_plot_density.py` and
-:ref:`sphx_glr_examples_1_basic_plot_lensing.py` examples with generators for
-the intrinsic galaxy ellipticity and the resulting shear.
+combining the :doc:`/basic/plot_density` and :doc:`/basic/plot_lensing` examples
+with generators for the intrinsic galaxy ellipticity and the resulting shear.
 
 '''
 
@@ -26,9 +25,9 @@ import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and the glass meta-module
+# these are the GLASS imports: cosmology and everything in the glass namespace
 from cosmology import LCDM
-from glass import glass
+import glass.all
 
 # also needs camb itself to get the parameter object, and the expectation
 import camb
@@ -67,7 +66,9 @@ generators = [
     glass.matter.lognormal_matter(nside),
     glass.lensing.convergence(cosmo),
     glass.lensing.shear(),
-    glass.galaxies.gal_dist_uniform(z, dndz),
+    glass.galaxies.gal_density_dndz(z, dndz),
+    glass.galaxies.gal_positions_unif(),
+    glass.galaxies.gal_redshifts_nz(),
     glass.galaxies.gal_ellip_gaussian(sigma_e),
     glass.galaxies.gal_shear_interp(cosmo),
 ]
@@ -87,8 +88,8 @@ num = np.zeros_like(she, dtype=int)
 
 # iterate and map the galaxy shears to a HEALPix map
 for it in glass.sim.generate(generators):
-    gal_lon, gal_lat = it['gal_lon'], it['gal_lat']
-    gal_she = it['gal_she']
+    gal_lon, gal_lat = it[glass.galaxies.GAL_LON], it[glass.galaxies.GAL_LAT]
+    gal_she = it[glass.galaxies.GAL_SHE]
 
     gal_pix = hp.ang2pix(nside, gal_lon, gal_lat, lonlat=True)
     s = np.argsort(gal_pix)

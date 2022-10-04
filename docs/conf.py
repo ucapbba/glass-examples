@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'GLASS'
+project = 'GLASS Examples'
 copyright = '2022, Nicolas Tessore'
 author = 'Nicolas Tessore'
 
@@ -92,7 +92,7 @@ html_css_files = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
-    'glass': ('https://glass.readthedocs.org/en/latest/', None),
+    'glass': ('https://glass.readthedocs.io/en/latest/', None),
 }
 
 
@@ -110,6 +110,7 @@ sphinx_gallery_conf = {
         '../examples/advanced',
     ]),
     'within_subsection_order': ExampleTitleSortKey,
+    'reference_url': {},
     'download_all_examples': False,
     'image_srcset': ['2x'],
     'show_signature': False,

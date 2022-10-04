@@ -25,9 +25,9 @@ import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and the glass meta-module
+# these are the GLASS imports: cosmology and everything in the glass namespace
 from cosmology import LCDM
-from glass import glass
+import glass.all
 
 # also needs camb itself to get the parameter object, and the expectation
 import camb
@@ -52,7 +52,7 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for a lensing-only simulation
 generators = [
-    glass.sim.zspace(0, 1.01, dz=0.1),
+    glass.sim.zspace(0., 1., dz=0.1),
     glass.matter.mat_wht_redshift(),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
@@ -72,9 +72,8 @@ generators = [
 
 # simulate and store the integrated lensing maps
 for shell in glass.sim.generate(generators):
-    kappa = shell['kappa_bar']
-    gamma1 = shell['gamma1_bar']
-    gamma2 = shell['gamma2_bar']
+    kappa = shell[glass.lensing.KAPPA_BAR]
+    gamma1, gamma2 = shell[glass.lensing.GAMMA_BAR]
 
 
 # %%
@@ -94,13 +93,10 @@ pars.set_for_lmax(lmax, lens_potential_accuracy=1)
 pars.SourceWindows = [camb.sources.SplinedSourceWindow(z=z, W=nz, source_type='lensing')]
 theory_cls = camb.get_results(pars).get_source_cls_dict(lmax=lmax, raw_cl=True)
 
-# get the pixel window function
-pw = hp.pixwin(nside, lmax=lmax)
-
 # plot the realised and expected cls
 l = np.arange(lmax+1)
 plt.plot(l, (2*l+1)*cls[0], '-k', lw=2, label='simulation')
-plt.plot(l, (2*l+1)*theory_cls['W1xW1']*pw**2, '-r', lw=2, label='expectation')
+plt.plot(l, (2*l+1)*theory_cls['W1xW1'], '-r', lw=2, label='expectation')
 plt.xscale('symlog', linthresh=10, linscale=0.5, subs=[2, 3, 4, 5, 6, 7, 8, 9])
 plt.yscale('symlog', linthresh=1e-7, linscale=0.5, subs=[2, 3, 4, 5, 6, 7, 8, 9])
 plt.xlabel(r'angular mode number $l$')

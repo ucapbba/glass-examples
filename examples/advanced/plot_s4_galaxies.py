@@ -3,11 +3,9 @@ Stage IV Galaxy Survey
 ======================
 
 This example simulates a galaxy catalogue from a Stage IV Space Satellite Galaxy
-Survey such as *Euclid* and *Roman* combining the
-:ref:`sphx_glr_examples_1_basic_plot_density.py` and
-:ref:`sphx_glr_examples_1_basic_plot_lensing.py` examples with generators for
-the intrinsic galaxy ellipticity and the resulting shear with some auxiliary
-functions.
+Survey such as *Euclid* and *Roman* combining the :doc:`/basic/plot_density` and
+:doc:`/basic/plot_lensing` examples with generators for the intrinsic galaxy
+ellipticity and the resulting shear with some auxiliary functions.
 
 The focus in this example is mock catalogue generation using auxiliary functions
 built for simulating Stage IV galaxy surveys.
@@ -30,12 +28,13 @@ import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and the glass meta-module
+# these are the GLASS imports: cosmology and everything in the glass namespace
 from cosmology import LCDM
-from glass import glass
+import glass.all
 
 # also needs camb itself to get the parameter object
 import camb
+
 
 # cosmology for the simulation
 h = 0.7
@@ -121,7 +120,11 @@ generators = [
     glass.lensing.convergence(cosmo),
     glass.lensing.shear(lmax),
     glass.observations.vis_constant(vis, nside=nside),
-    glass.galaxies.gal_dist_fullsky(z, bin_nz, bz=bz, rng=rng),
+    glass.galaxies.gal_b_const(1.8),
+    glass.galaxies.gal_bias_linear(),
+    glass.galaxies.gal_density_dndz(z, bin_nz),
+    glass.galaxies.gal_positions_mat(rng=rng),
+    glass.galaxies.gal_redshifts_nz(rng=rng),
     glass.galaxies.gal_ellip_gaussian(sigma_e, rng=rng),
     glass.galaxies.gal_shear_interp(cosmo),
 ]
@@ -134,17 +137,17 @@ generators = [
 
 # we will store the catalogue as a dictionary:
 catalogue = {'RA': np.array([]), 'DEC': np.array([]), 'TRUE_Z': np.array([]),
-             'E1': np.array([]), 'E2': np.array([]), 'TOMO_ID': np.array([])}
+             'G1': np.array([]), 'G2': np.array([]), 'TOMO_ID': np.array([])}
 
 # iterate and store the quantities of interest for our mock catalogue:
 for shell in glass.sim.generate(generators):
     # let's assume here that lon lat here are RA and DEC:
-    catalogue['RA'] = np.append(catalogue['RA'], shell['gal_lon'])
-    catalogue['DEC'] = np.append(catalogue['DEC'], shell['gal_lat'])
-    catalogue['TRUE_Z'] = np.append(catalogue['TRUE_Z'], shell['gal_z'])
-    catalogue['E1'] = np.append(catalogue['E1'], shell['gal_ell'].real)
-    catalogue['E2'] = np.append(catalogue['E2'], shell['gal_ell'].imag)
-    catalogue['TOMO_ID'] = np.append(catalogue['TOMO_ID'], shell['gal_pop'])
+    catalogue['RA'] = np.append(catalogue['RA'], shell[glass.galaxies.GAL_LON])
+    catalogue['DEC'] = np.append(catalogue['DEC'], shell[glass.galaxies.GAL_LAT])
+    catalogue['TRUE_Z'] = np.append(catalogue['TRUE_Z'], shell[glass.galaxies.GAL_Z])
+    catalogue['G1'] = np.append(catalogue['G1'], shell[glass.galaxies.GAL_SHE].real)
+    catalogue['G2'] = np.append(catalogue['G2'], shell[glass.galaxies.GAL_SHE].imag)
+    catalogue['TOMO_ID'] = np.append(catalogue['TOMO_ID'], shell[glass.galaxies.GAL_POP])
 
 print(f"Total Number of galaxies sampled: {len(catalogue['TRUE_Z']):,}")
 

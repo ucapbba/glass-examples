@@ -9,15 +9,15 @@ This example simulates galaxies with a simple photometric redshift model.
 # %%
 # Setup
 # -----
-# The simplest galaxies-only GLASS simulation, sampling galaxies uniformly over
-# the sphere using some redshift distribution.  Then add a model for photometric
-# redshifts with Gaussian errors.
+# The simplest galaxies-only GLASS simulation, sampling galaxies using some
+# redshift distribution.  Then add a model for photometric redshifts with
+# Gaussian errors.
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: only the glass meta-module
-from glass import glass
+# import everything in the glass namespace
+import glass.all
 
 
 # basic parameters of the simulation
@@ -37,7 +37,9 @@ dndz = n_arcmin2*glass.observations.smail_nz(z, 1.0, 2.2, 1.5)
 # generators for a uniform galaxies simulation
 generators = [
     glass.sim.zspace(z[0], z[-1]+0.01, dz=0.25),
-    glass.galaxies.gal_dist_uniform(z, dndz),
+    glass.galaxies.gal_density_dndz(z, dndz),
+    glass.galaxies.gal_positions_unif(),
+    glass.galaxies.gal_redshifts_nz(),
     glass.galaxies.gal_phz_gausserr(phz_sigma_0),
 ]
 
@@ -53,8 +55,8 @@ zphot = np.empty(0)
 
 # simulate and add galaxies in each matter shell to arrays
 for shell in glass.sim.generate(generators):
-    ztrue = np.append(ztrue, shell['gal_z'])
-    zphot = np.append(zphot, shell['gal_z_phot'])
+    ztrue = np.append(ztrue, shell[glass.galaxies.GAL_Z])
+    zphot = np.append(zphot, shell[glass.galaxies.GAL_PHZ])
 
 
 # %%
