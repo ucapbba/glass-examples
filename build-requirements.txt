@@ -1,0 +1,6 @@
+numpy
+healpy
+camb
+matplotlib
+git+https://github.com/glass-dev/glass.git
+git+https://github.com/glass-dev/glass-camb.git

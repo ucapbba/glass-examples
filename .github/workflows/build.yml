@@ -1,0 +1,32 @@
+name: Build examples
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+
+env:
+  BUILD_NAME: 'github-actions[bot]'
+  BUILD_EMAIL: '<41898282+github-actions[bot]@users.noreply.github.com>'
+  BUILD_MESSAGE: 'build examples'
+  BUILD_BRANCH: 'build'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3'
+        cache: 'pip'
+    - run: pip install -r requirements.txt
+    - run: pip install -r build-requirements.txt
+    - run: cd docs && make html
+    - run: |
+        git add -A
+        git config user.name "${BUILD_NAME}"
+        git config user.email "${BUILD_EMAIL}"
+        git commit -m "${BUILD_MESSAGE}"
+        git push -f origin HEAD:${BUILD_BRANCH}
