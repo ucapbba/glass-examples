@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 # these are the GLASS imports: cosmology and everything in the glass namespace
 from cosmology import LCDM
 import glass.all
+import glass
 
 # also needs camb itself to get the parameter object
 import camb

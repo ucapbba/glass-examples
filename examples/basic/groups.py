@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 
 # import everything in the glass namespace
 import glass.all
+import glass
 
 
 # basic parameters of the simulation

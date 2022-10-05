@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 
 # import everything in the glass namespace
 import glass.all
+import glass
 
 # also needs camb itself to get the parameter object
 import camb
