@@ -1,12 +1,10 @@
-.navbar-brand:after {
-    content: "GLASS \A Examples";
+.navbar-brand.logo .title {
     color: var(--pst-color-primary);
-    font-size: 0.9em;
+    font-size: 1.0em;
     font-weight: 200;
     font-stretch: 110%;
     letter-spacing: .1em;
     line-height: 1;
     vertical-align: middle;
     margin-left: 0.2em;
-    white-space: pre;
 }
