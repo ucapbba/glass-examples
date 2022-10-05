@@ -83,11 +83,16 @@ GAL_OD_FLAG = 'galaxy overdensity flags'
     yields=GAL_OD_FLAG)
 def gal_od_flag_model(thresh=0.):
 
+    # it's possible to pre-process before the iteration starts
+    print('initialising our model')
+
     # initial yield
     od_flag = None
 
     # receive inputs and yield outputs, or break on exit
     while True:
+        # the try ... except GeneratorExit is only necessary for post-processing
+        # otherwise, the yield statement is enough
         try:
             delta, lon, lat = yield od_flag
         except GeneratorExit:
@@ -103,8 +108,8 @@ def gal_od_flag_model(thresh=0.):
 
         # the computation then loops around and yields our latest results
 
-    # it's possible to post-process after the simulation stopped
-    print('done with our model')
+    # it's possible to post-process after the iteration stops
+    print('finalising our model')
 
 
 # add our new model to the generators used in the simulation
