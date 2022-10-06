@@ -114,7 +114,7 @@ plt.show()
 # %%
 # generators for the clustering and lensing
 generators = [
-    glass.sim.xspace(cosmo, 0., 3., dx=dx),
+    glass.cosmology.xspace(cosmo, 0., 3., dx=dx),
     glass.matter.mat_wht_redshift(),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside, rng=rng),
@@ -141,7 +141,7 @@ catalogue = {'RA': np.array([]), 'DEC': np.array([]), 'TRUE_Z': np.array([]),
              'G1': np.array([]), 'G2': np.array([]), 'TOMO_ID': np.array([])}
 
 # iterate and store the quantities of interest for our mock catalogue:
-for shell in glass.sim.generate(generators):
+for shell in glass.core.generate(generators):
     # let's assume here that lon lat here are RA and DEC:
     catalogue['RA'] = np.append(catalogue['RA'], shell[glass.galaxies.GAL_LON])
     catalogue['DEC'] = np.append(catalogue['DEC'], shell[glass.galaxies.GAL_LAT])

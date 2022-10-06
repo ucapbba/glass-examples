@@ -37,7 +37,7 @@ dndz = n_arcmin2*glass.observations.smail_nz(z, 1.0, 2.2, 1.5)
 
 # generators for a uniform galaxies simulation
 generators = [
-    glass.sim.zspace(z[0], z[-1]+0.01, dz=0.25),
+    glass.cosmology.zspace(z[0], z[-1]+0.01, dz=0.25),
     glass.galaxies.gal_density_dndz(z, dndz),
     glass.galaxies.gal_positions_unif(),
     glass.galaxies.gal_redshifts_nz(),
@@ -55,7 +55,7 @@ ztrue = np.empty(0)
 zphot = np.empty(0)
 
 # simulate and add galaxies in each matter shell to arrays
-for shell in glass.sim.generate(generators):
+for shell in glass.core.generate(generators):
     ztrue = np.append(ztrue, shell[glass.galaxies.GAL_Z])
     zphot = np.append(zphot, shell[glass.galaxies.GAL_PHZ])
 

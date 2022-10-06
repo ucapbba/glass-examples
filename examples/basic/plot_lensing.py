@@ -53,7 +53,7 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for a lensing-only simulation
 generators = [
-    glass.sim.zspace(0., 1., dz=0.1),
+    glass.cosmology.zspace(0., 1., dz=0.1),
     glass.matter.mat_wht_redshift(),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
@@ -72,7 +72,7 @@ generators = [
 # previous values are not kept.
 
 # simulate and store the integrated lensing maps
-for shell in glass.sim.generate(generators):
+for shell in glass.core.generate(generators):
     kappa = shell[glass.lensing.KAPPA_BAR]
     gamma1, gamma2 = shell[glass.lensing.GAMMA_BAR]
 

@@ -61,7 +61,7 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for lensing and galaxies
 generators = [
-    glass.sim.zspace(0, 1., dz=0.1),
+    glass.cosmology.zspace(0, 1., dz=0.1),
     glass.matter.mat_wht_redshift(),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
@@ -88,7 +88,7 @@ she = np.zeros(hp.nside2npix(nside), dtype=complex)
 num = np.zeros_like(she, dtype=int)
 
 # iterate and map the galaxy shears to a HEALPix map
-for it in glass.sim.generate(generators):
+for it in glass.core.generate(generators):
     gal_lon, gal_lat = it[glass.galaxies.GAL_LON], it[glass.galaxies.GAL_LAT]
     gal_she = it[glass.galaxies.GAL_SHE]
 

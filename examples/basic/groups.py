@@ -38,13 +38,13 @@ dndz_high = n_arcmin2*glass.observations.smail_nz(z, 2.0, 4.0, 2.5)
 
 # generators for a uniform galaxies simulation
 generators = [
-    glass.sim.zspace(0., 3., dz=0.25),
-    glass.sim.group('low-z', [
+    glass.cosmology.zspace(0., 3., dz=0.25),
+    glass.core.group('low-z', [
         glass.galaxies.gal_density_dndz(z, dndz_low),
         glass.galaxies.gal_positions_unif(),
         glass.galaxies.gal_redshifts_nz(),
     ]),
-    glass.sim.group('high-z', [
+    glass.core.group('high-z', [
         glass.galaxies.gal_density_dndz(z, dndz_high),
         glass.galaxies.gal_positions_unif(),
         glass.galaxies.gal_redshifts_nz(),
@@ -63,7 +63,7 @@ low_z = np.empty(0)
 high_z = np.empty(0)
 
 # simulate and add galaxies in each matter shell to arrays
-for shell in glass.sim.generate(generators):
+for shell in glass.core.generate(generators):
     low_z = np.append(low_z, shell['low-z'][glass.galaxies.GAL_Z])
     high_z = np.append(high_z, shell['high-z'][glass.galaxies.GAL_Z])
 

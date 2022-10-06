@@ -50,7 +50,7 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for a galaxies-only simulation
 generators = [
-    glass.sim.zspace(0., 1., dz=0.1),
+    glass.cosmology.zspace(0., 1., dz=0.1),
     glass.matter.mat_wht_redshift(),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
@@ -126,7 +126,7 @@ generators.append(gal_od_flag_model(thresh=0.01))
 lon, lat, od_flag = np.empty(0), np.empty(0), np.empty(0, dtype=bool)
 
 # simulate and add galaxies in each iteration to lists
-for it in glass.sim.generate(generators):
+for it in glass.core.generate(generators):
     lon = np.append(lon, it[GAL_LON])
     lat = np.append(lat, it[GAL_LAT])
     od_flag = np.append(od_flag, it[GAL_OD_FLAG])

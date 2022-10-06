@@ -52,7 +52,7 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for a galaxies-only simulation
 generators = [
-    glass.sim.zspace(z[0], z[-1], dz=0.1),
+    glass.cosmology.zspace(z[0], z[-1], dz=0.1),
     glass.matter.mat_wht_density(cosmo),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
@@ -76,7 +76,7 @@ xbin = np.concatenate([-xbin[:0:-1], xbin])
 cube = np.zeros((xbin.size-1,)*3)
 
 # simulate and add galaxies in each matter shell to cube
-for shell in glass.sim.generate(generators):
+for shell in glass.core.generate(generators):
     rgal = cosmo.xc(shell[glass.galaxies.GAL_Z])
     lon = np.deg2rad(shell[glass.galaxies.GAL_LON])
     lat = np.deg2rad(shell[glass.galaxies.GAL_LAT])

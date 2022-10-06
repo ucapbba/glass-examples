@@ -41,7 +41,7 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for a matter-only simulation
 generators = [
-    glass.sim.xspace(cosmo, 0, zend, dx=200.),
+    glass.cosmology.xspace(cosmo, 0, zend, dx=200.),
     glass.matter.mat_wht_density(cosmo),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
@@ -67,8 +67,8 @@ ax = plt.subplot(111)
 ax.axis('off')
 
 # simulate and project an annulus of each matter shell onto the grid
-for shell in glass.sim.generate(generators):
-    rmin, rmax = cosmo.xc(shell[glass.sim.ZMIN, glass.sim.ZMAX])
+for shell in glass.core.generate(generators):
+    rmin, rmax = cosmo.xc(shell[glass.cosmology.ZMIN, glass.cosmology.ZMAX])
     delt = shell[glass.matter.DELTA]
     g = (rmin <= r) & (r < rmax)
     z = np.sqrt(1 - (r[g]/rmax)**2)
