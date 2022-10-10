@@ -26,7 +26,7 @@ import healpy as hp
 import matplotlib.pyplot as plt
 
 # these are the GLASS imports: cosmology and everything in the glass namespace
-from cosmology import LCDM
+from cosmology import Cosmology
 import glass.all
 import glass
 
@@ -38,11 +38,16 @@ import camb
 h = 0.7
 Oc = 0.25
 Ob = 0.05
-cosmo = LCDM(h=h, Om=Oc+Ob)
 
 # basic parameters of the simulation
 nside = 512
 lmax = nside
+
+# set up CAMB parameters for matter angular power spectrum
+pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
+
+# use CAMB cosmology in GLASS
+cosmo = Cosmology.from_camb(pars)
 
 # the intrinsic galaxy ellipticity
 # this is very small so that the galaxy density can be small, too
@@ -55,9 +60,6 @@ n_arcmin2 = 0.01
 z = np.linspace(0, 1, 101)
 dndz = np.exp(-(z - 0.5)**2/(0.1)**2)
 dndz *= n_arcmin2/np.trapz(dndz, z)
-
-# set up CAMB parameters for matter angular power spectrum
-pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
 # generators for lensing and galaxies
 generators = [

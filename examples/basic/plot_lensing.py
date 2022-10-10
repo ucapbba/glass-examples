@@ -26,7 +26,7 @@ import healpy as hp
 import matplotlib.pyplot as plt
 
 # these are the GLASS imports: cosmology and everything in the glass namespace
-from cosmology import LCDM
+from cosmology import Cosmology
 import glass.all
 import glass
 
@@ -38,7 +38,6 @@ import camb
 h = 0.7
 Oc = 0.25
 Ob = 0.05
-cosmo = LCDM(h=h, Om=(Oc+Ob))
 
 # basic parameters of the simulation
 nside = 512
@@ -51,6 +50,9 @@ nz = np.exp(-(z - 0.5)**2/(0.1)**2)
 # set up CAMB parameters for matter angular power spectrum
 pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 
+# use CAMB cosmology in GLASS
+cosmo = Cosmology.from_camb(pars)
+
 # generators for a lensing-only simulation
 generators = [
     glass.cosmology.zspace(0., 1., dz=0.1),
@@ -60,6 +62,12 @@ generators = [
     glass.lensing.convergence(cosmo),
     glass.lensing.shear(),
     glass.lensing.lensing_dist(z, nz, cosmo),
+]
+
+# variables we will use for plotting
+yields = [
+    glass.lensing.KAPPA_BAR,
+    glass.lensing.GAMMA_BAR,
 ]
 
 
@@ -72,9 +80,8 @@ generators = [
 # previous values are not kept.
 
 # simulate and store the integrated lensing maps
-for shell in glass.core.generate(generators):
-    kappa = shell[glass.lensing.KAPPA_BAR]
-    gamma1, gamma2 = shell[glass.lensing.GAMMA_BAR]
+for kappa, (gamma1, gamma2) in glass.core.generate(generators, yields):
+    pass
 
 
 # %%

@@ -17,7 +17,7 @@ import healpy as hp
 import matplotlib.pyplot as plt
 
 # these are the GLASS imports: cosmology and everything in the glass namespace
-from cosmology import LCDM
+from cosmology import Cosmology
 import glass.all
 import glass
 
@@ -29,7 +29,6 @@ import camb
 h = 0.7
 Oc = 0.25
 Ob = 0.05
-cosmo = LCDM(h=h, Om=Oc+Ob)
 
 # basic parameters of the simulation
 nside = 1024
@@ -38,6 +37,9 @@ zend = 1.
 
 # set up CAMB parameters for matter angular power spectrum
 pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
+
+# use CAMB cosmology in GLASS
+cosmo = Cosmology.from_camb(pars)
 
 # generators for a matter-only simulation
 generators = [
