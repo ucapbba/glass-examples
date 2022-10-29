@@ -61,7 +61,7 @@ save_vars = [
 # generators that are being saved
 generators = [
     glass.cosmology.zspace(0., 1., num=5),
-    glass.matter.mat_wht_redshift(),
+    glass.matter.mat_wht_redshift(zlin=0.1),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.core.save('my_saved_data.glass', save_vars),
 ]

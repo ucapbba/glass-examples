@@ -56,7 +56,7 @@ cosmo = Cosmology.from_camb(pars)
 # generators for a lensing-only simulation
 generators = [
     glass.cosmology.zspace(0., 1., dz=0.1),
-    glass.matter.mat_wht_redshift(),
+    glass.matter.mat_wht_redshift(zlin=0.1),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
     glass.lensing.convergence(cosmo),

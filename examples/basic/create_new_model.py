@@ -51,7 +51,7 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 # generators for a galaxies-only simulation
 generators = [
     glass.cosmology.zspace(0., 1., dz=0.1),
-    glass.matter.mat_wht_redshift(),
+    glass.matter.mat_wht_redshift(zlin=0.1),
     glass.camb.camb_matter_cl(pars, lmax),
     glass.matter.lognormal_matter(nside),
     glass.galaxies.gal_density_const(n_arcmin2),
