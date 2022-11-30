@@ -2,33 +2,38 @@
 Saving and loading
 ==================
 
-This example demonstrates how generator outputs can be saved and loaded again.
+This example demonstrates how matter shell definitions can be saved and loaded.
 
 This is mostly useful to accelerate repeated computations which use the same
-input parameters.  For example, the angular matter power spectrum for a fixed
+input parameters, because the angular matter power spectrum for a fixed
 cosmology and matter weight function can be saved and then loaded again.  This
 prevents re-running a costly computation many times over when different models
 are being compared further down the simulation pipeline.
 
-However, keep in mind that for large arrays, such as maps at high resolution, it
-is almost always cheaper to generate the data again from a fixed seed and saved
-inputs, than it is to save and load the large array itself.
+Under the hood, the saving and loading is done very plainly using
+:func:`numpy.savez` and :func:`numpy.load` for the given arrays.
 
 '''
 
+
 # %%
-# Setup
-# -----
-# As the prototypical case of a generator that is expensive but only produces a
-# relatively small amount of data, we will use CAMB to compute the angular
-# matter power spectrum.
+# Compute
+# -------
+# Here we define the shells for these examples, and use CAMB to compute the
+# angular matter power spectra for the shell definitions.  We also compute a
+# set of lensing weights, which need the cosmology object (``cosmo``).
+#
+# Afterwards, we can save the shell definition.  Most examples (and real
+# simulations) can then be run from the saved definitions without needing to
+# know about the cosmology again.
 
-# these are the GLASS imports: cosmology and everything in the glass namespace
-import glass.all
-import glass
-
-# also needs camb itself to get the parameter object
+import os.path
 import camb
+from cosmology import Cosmology
+import glass.matter
+import glass.camb
+import glass.lensing
+import glass.user
 
 
 # cosmology for the simulation
@@ -36,57 +41,54 @@ h = 0.7
 Oc = 0.25
 Ob = 0.05
 
-# set up CAMB parameters for matter angular power spectrum
-pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
-
 # basic parameters of the simulation
-nside = 128
-lmax = nside
+lmax = 1000
+
+# set up CAMB parameters for matter angular power spectrum
+pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
+                       NonLinear=camb.model.NonLinear_both)
+
+# get the cosmology from CAMB
+cosmo = Cosmology.from_camb(pars)
+
+# shells in redshift spacing
+shells = glass.matter.redshift_shells(0., 1., dz=0.1)
+
+# redshift weight function for matter
+# CAMB requires linear ramp for low redshifts
+mweights = glass.matter.redshift_weights(shells, zlin=0.1)
+
+# compute angular matter power spectra with CAMB
+cls = glass.camb.matter_cls(pars, lmax, mweights)
+
+# compute lensing weights
+lweights = glass.lensing.midpoint_weights(shells, mweights, cosmo)
+
 
 # %%
 # Saving
 # ------
-# Set up the costly ``camb_matter_cl`` computation, and then save the relevant
-# outputs: matter shells, matter weight function, and angular matter power
-# spectra.
+# We can load shell definitions from file.  The full set of saved entries are
+# the shells (``shells``), matter weights (``mweights``), angular matter power
+# spectra (``cls``), and lensing weights (``lweights``).
+#
+# Internally, the function uses numpy's ``savez``, so the output file will be
+# given an ``.npz`` extension if it does not already have one.
 
-# these are the variables that will be saved
-save_vars = [
-    glass.cosmology.ZMIN,
-    glass.cosmology.ZMAX,
-    glass.matter.WZ,
-    glass.matter.CL,
-]
+# save the matter shell definition to file
+# not all arguments need to be given
+glass.user.save_shells('shells.npz', shells, mweights, cls, lweights)
 
-# generators that are being saved
-generators = [
-    glass.cosmology.zspace(0., 1., num=5),
-    glass.matter.mat_wht_redshift(zlin=0.1),
-    glass.camb.camb_matter_cl(pars, lmax),
-    glass.core.save('my_saved_data.glass', save_vars),
-]
-
-# iterate; save data but here not doing anything else
-print('saving ', end='')
-for it in glass.core.generate(generators):
-    print('.', end='')
-print(' done!')
 
 # %%
 # Loading
 # -------
-# Now we can load the generator output from the saved file, and quickly run any
-# number of generators.  For example, use the saved angular matter power spectra
-# to generate a matter field.
+# Saving the shell definition works in the same way.  Not all entries need to
+# provided; for example, here we do not save the lensing weights.
+#
+# Not all entries have to be saved and loaded, in which case some of the return
+# values can be ``None``.  The number and order of returned values is of course
+# always the same.
 
-# generators to load and process previously saved variables
-generators = [
-    glass.core.load('my_saved_data.glass'),
-    glass.matter.lognormal_matter(nside),
-]
-
-# iterate; data is loaded and used by other generators
-print('loading ', end='')
-for it in glass.core.generate(generators):
-    print('.', end='')
-print(' done!')
+# load previously saved shell definitions (normally in another file)
+shells, mweights, cls, lweights = glass.user.load_shells('shells.npz')

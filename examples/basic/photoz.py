@@ -31,17 +31,21 @@ n_arcmin2 = 1e-4
 # photometric redshift error at redshift 0
 phz_sigma_0 = 0.05
 
+# matter shell definition, uniform thickness in redshift
+shells = glass.matter.redshift_shells(0., 3., dz=0.25)
+
 # parametric galaxy redshift distribution
 z = np.linspace(0, 3, 301)
 dndz = n_arcmin2*glass.observations.smail_nz(z, 1.0, 2.2, 1.5)
 
+# compute the galaxy density in each shell
+ngal = glass.galaxies.densities_from_dndz(z, dndz, shells)
+
 # generators for a uniform galaxies simulation
 generators = [
-    glass.cosmology.zspace(z[0], z[-1]+0.01, dz=0.25),
-    glass.galaxies.gal_density_dndz(z, dndz),
-    glass.galaxies.gal_positions_unif(),
-    glass.galaxies.gal_redshifts_nz(),
-    glass.galaxies.gal_phz_gausserr(phz_sigma_0),
+    glass.galaxies.gen_uniform_positions(ngal),
+    glass.galaxies.gen_redshifts_from_nz(z, dndz, shells),
+    glass.galaxies.gen_phz_gausserr(phz_sigma_0),
 ]
 
 

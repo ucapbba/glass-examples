@@ -3,7 +3,7 @@ Galaxy distribution
 ===================
 
 This example simulates a matter-only light cone up to redshift 1 and samples
-galaxies from a uniform distribution in volume.  The results are shown in a
+galaxies from a uniform distribution in redshift.  The results are shown in a
 pseudo-3D plot.  This helps to make sure the galaxies sampling across shells
 works as intended.
 
@@ -13,52 +13,38 @@ works as intended.
 # Setup
 # -----
 # Set up a galaxy positions-only GLASS simulation.  It needs very little input:
-# a way to obtain matter angular power spectra (here: CAMB) and a redshift
-# distribution of galaxies to sample from (here: uniform in volume).
+# matter shell definition, a constant density distribution, and generators for
+# uniform sampling of positions and redshifts.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
-# these are the GLASS imports: cosmology and everything in the glass namespace
-from cosmology import Cosmology
+# these are the GLASS imports: everything in the glass namespace
 import glass.all
 import glass
 
-# also needs camb itself to get the parameter object
-import camb
 
+# create a basic setup of shells in redshift
+shells = glass.matter.redshift_shells(0., 1., dz=0.1)
 
-# cosmology for the simulation
-h = 0.7
-Oc = 0.25
-Ob = 0.05
+# total galaxy number density per unit redshift interval and arcmin2
+dndz_arcmin2 = 0.01
 
-# basic parameters of the simulation
-nside = 128
-lmax = nside
+# number density in each matter shell
+ngal = glass.galaxies.constant_densities(dndz_arcmin2, shells)
 
-# set up CAMB parameters for matter angular power spectrum
-pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
-
-# use CAMB cosmology in GLASS
-cosmo = Cosmology.from_camb(pars)
-
-# galaxy density
-n_arcmin2 = 0.01
-
-# uniform (in volume) source distribution with given angular density
-z = np.linspace(0, 1, 101)
-dndz = n_arcmin2*cosmo.dvc(z)/cosmo.vc(z[-1])
-
-# generators for a galaxies-only simulation
+# generators for a galaxies-only simulation with one correlated shell
 generators = [
-    glass.cosmology.zspace(z[0], z[-1], dz=0.1),
-    glass.matter.mat_wht_density(cosmo),
-    glass.camb.camb_matter_cl(pars, lmax),
-    glass.matter.lognormal_matter(nside),
-    glass.galaxies.gal_density_dndz(z, dndz),
-    glass.galaxies.gal_positions_unif(),
-    glass.galaxies.gal_redshifts_nz(),
+    glass.galaxies.gen_uniform_positions(ngal),
+    glass.galaxies.gen_uniform_redshifts(shells),
+]
+
+# the values we want to get out of the simulation
+yields = [
+    glass.galaxies.GAL_Z,
+    glass.galaxies.GAL_LON,
+    glass.galaxies.GAL_LAT,
 ]
 
 
@@ -66,24 +52,19 @@ generators = [
 # Simulation
 # ----------
 # The goal of this example is to make a 3D cube of the sampled galaxy numbers.
-# An comoving distance cube is initialised with zero counts, and the simulation
-# is run.  For every shell in the light cone, the galaxies are counted in the
-# cube.
+# A redshift cube is initialised with zero counts, and the simulation is run.
+# For every shell in the light cone, the galaxies are counted in the cube.
 
-# make a cube for galaxy number in comoving distance
-xbin = cosmo.xc(z)
-xbin = np.concatenate([-xbin[:0:-1], xbin])
-cube = np.zeros((xbin.size-1,)*3)
+# make a cube for galaxy number in redshift
+zbin = np.linspace(-shells[-1], shells[-1], 21)
+cube = np.zeros((zbin.size-1,)*3)
 
 # simulate and add galaxies in each matter shell to cube
-for shell in glass.core.generate(generators):
-    rgal = cosmo.xc(shell[glass.galaxies.GAL_Z])
-    lon = np.deg2rad(shell[glass.galaxies.GAL_LON])
-    lat = np.deg2rad(shell[glass.galaxies.GAL_LAT])
-    x1 = rgal*np.cos(lon)*np.cos(lat)
-    x2 = rgal*np.sin(lon)*np.cos(lat)
-    x3 = rgal*np.sin(lat)
-    (i, j, k), c = np.unique(np.searchsorted(xbin[1:], [x1, x2, x3]), axis=1, return_counts=True)
+for gal_z, gal_lon, gal_lat in glass.core.generate(generators, yields):
+    z1 = gal_z*np.cos(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))
+    z2 = gal_z*np.sin(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))
+    z3 = gal_z*np.sin(np.deg2rad(gal_lat))
+    (i, j, k), c = np.unique(np.searchsorted(zbin[1:], [z1, z2, z3]), axis=1, return_counts=True)
     cube[i, j, k] += c
 
 
@@ -94,17 +75,18 @@ for shell in glass.core.generate(generators):
 # each other.
 
 # positions of grid cells of the cube
-x = (xbin[:-1] + xbin[1:])/2
-x1, x2, x3 = np.meshgrid(x, x, x)
+z = (zbin[:-1] + zbin[1:])/2
+z1, z2, z3 = np.meshgrid(z, z, z)
 
 # plot the galaxy distribution in pseudo-3D
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d', proj_type='ortho')
-vmin, vmax = 0, 0.8*np.max(cube)
-for i in range(10, len(xbin)-1, 10):
-    v = np.clip((cube[..., i] - vmin)/(vmax - vmin), 0, 1)
+norm = LogNorm(vmin=np.min(cube[cube>0]), vmax=np.max(cube), clip=True)
+for i in range(len(zbin)-1):
+    v = norm(cube[..., i])
     c = plt.cm.inferno(v)
-    c[..., -1] = 0.5*v
-    ax.plot_surface(x1[..., i], x2[..., i], x3[..., i], facecolors=c, rstride=1, cstride=1, shade=False)
+    c[..., -1] = 0.2*v
+    ax.plot_surface(z1[..., i], z2[..., i], z3[..., i], rstride=1, cstride=1,
+                    facecolors=c, linewidth=0, shade=False, antialiased=False)
 fig.tight_layout()
 plt.show()

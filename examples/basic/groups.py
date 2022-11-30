@@ -31,23 +31,28 @@ lmax = nside
 # galaxy density
 n_arcmin2 = 1e-4
 
-# parametric galaxy redshift distribution
+# set up the matter shell boundaries
+shells = glass.matter.redshift_shells(0., 3., dz=0.25)
+
+# parametric galaxy redshift distribution: one for low-z, one for high-z
 z = np.linspace(0, 3, 301)
 dndz_low = n_arcmin2*glass.observations.smail_nz(z, 0.5, 1.0, 2.5)
 dndz_high = n_arcmin2*glass.observations.smail_nz(z, 2.0, 4.0, 2.5)
 
-# generators for a uniform galaxies simulation
+# compute galaxy densities from dndz
+dens_low = glass.galaxies.densities_from_dndz(z, dndz_low, shells)
+dens_high = glass.galaxies.densities_from_dndz(z, dndz_high, shells)
+
+# generators for a uniform galaxies simulation in two groups
+# we need to sample positions because that Poisson-samples the galaxy number
 generators = [
-    glass.cosmology.zspace(0., 3., dz=0.25),
     glass.core.group('low-z', [
-        glass.galaxies.gal_density_dndz(z, dndz_low),
-        glass.galaxies.gal_positions_unif(),
-        glass.galaxies.gal_redshifts_nz(),
+        glass.galaxies.gen_uniform_positions(dens_low),
+        glass.galaxies.gen_redshifts_from_nz(z, dndz_low, shells),
     ]),
     glass.core.group('high-z', [
-        glass.galaxies.gal_density_dndz(z, dndz_high),
-        glass.galaxies.gal_positions_unif(),
-        glass.galaxies.gal_redshifts_nz(),
+        glass.galaxies.gen_uniform_positions(dens_high),
+        glass.galaxies.gen_redshifts_from_nz(z, dndz_high, shells),
     ]),
 ]
 

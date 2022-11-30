@@ -33,10 +33,8 @@ from glass.matter import DELTA
 from glass.galaxies import GAL_LON, GAL_LAT
 
 
-# cosmology for the simulation
-h = 0.7
-Oc = 0.25
-Ob = 0.05
+# load the precomputed shell definition
+shells, mweights, cls, lweights = glass.user.load_shells('shells.npz')
 
 # basic parameters of the simulation
 nside = 128
@@ -45,17 +43,13 @@ lmax = nside
 # galaxy density
 n_arcmin2 = 1e-6
 
-# set up CAMB parameters for matter angular power spectrum
-pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
+# compute constant galaxy densities in shells
+densities = glass.galaxies.constant_densities(n_arcmin2, shells)
 
-# generators for a galaxies-only simulation
+# generators for a galaxies-only simulation with one correlated shell
 generators = [
-    glass.cosmology.zspace(0., 1., dz=0.1),
-    glass.matter.mat_wht_redshift(zlin=0.1),
-    glass.camb.camb_matter_cl(pars, lmax),
-    glass.matter.lognormal_matter(nside),
-    glass.galaxies.gal_density_const(n_arcmin2),
-    glass.galaxies.gal_positions_unif(),
+    glass.matter.gen_lognormal_matter(cls, nside, ncorr=1),
+    glass.galaxies.gen_uniform_positions(densities),
 ]
 
 # %%
@@ -76,6 +70,7 @@ generators = [
 # you could also just pass the string value, but we usually define these
 GAL_OD_FLAG = 'galaxy overdensity flags'
 
+
 # the decorator labels the inputs and outputs of this generator
 # here we use the imported variable names from the GLASS modules
 # but you could also provide their string values
@@ -87,27 +82,27 @@ def gal_od_flag_model(thresh=0.):
     # it's possible to pre-process before the iteration starts
     print('initialising our model')
 
-    # initial yield
-    od_flag = None
+    # this try .. except GeneratorExit statement contains the simulation loop
+    try:
+        # initial yield receives the first batch of values
+        delta, lon, lat = yield
 
-    # receive inputs and yield outputs, or break on exit
-    while True:
-        # the try ... except GeneratorExit is only necessary for post-processing
-        # otherwise, the yield statement is enough
-        try:
+        # the main processing loop
+        while True:
+            # perform the computation for this iteration
+            # get the HEALPix pixel index of the galaxies
+            # set the flag if overdensity is above threshold
+            nside = hp.get_nside(delta)
+            ipix = hp.ang2pix(nside, lon, lat, lonlat=True)
+            od = delta[ipix]
+            od_flag = (od > thresh)
+
+            # yield the result and receive new inputs
             delta, lon, lat = yield od_flag
-        except GeneratorExit:
-            break
 
-        # perform the computation for this iteration
-        # get the HEALPix pixel index of the galaxies
-        # set the flag according to whether the overdensity is above threshold
-        nside = hp.get_nside(delta)
-        ipix = hp.ang2pix(nside, lon, lat, lonlat=True)
-        od = delta[ipix]
-        od_flag = (od > thresh)
-
-        # the computation then loops around and yields our latest results
+    except GeneratorExit:
+        # we are being told to stop processing
+        print('stop processing inputs')
 
     # it's possible to post-process after the iteration stops
     print('finalising our model')
@@ -115,6 +110,7 @@ def gal_od_flag_model(thresh=0.):
 
 # add our new model to the generators used in the simulation
 generators.append(gal_od_flag_model(thresh=0.01))
+
 
 # %%
 # Simulation
@@ -125,11 +121,14 @@ generators.append(gal_od_flag_model(thresh=0.01))
 # keep lists of positions and the overdensity flags
 lon, lat, od_flag = np.empty(0), np.empty(0), np.empty(0, dtype=bool)
 
+# outputs we want from the simulation
+yields = [GAL_LON, GAL_LAT, GAL_OD_FLAG]
+
 # simulate and add galaxies in each iteration to lists
-for it in glass.core.generate(generators):
-    lon = np.append(lon, it[GAL_LON])
-    lat = np.append(lat, it[GAL_LAT])
-    od_flag = np.append(od_flag, it[GAL_OD_FLAG])
+for lon_i, lat_i, od_flag_i in glass.core.generate(generators, yields):
+    lon = np.append(lon, lon_i)
+    lat = np.append(lat, lat_i)
+    od_flag = np.append(od_flag, od_flag_i)
 
 
 # %%

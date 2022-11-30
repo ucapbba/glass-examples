@@ -11,8 +11,10 @@ with generators for the intrinsic galaxy ellipticity and the resulting shear.
 # %%
 # Setup
 # -----
-# The basic setup of galaxies and weak lensing fields is the same as in the
-# previous examples.
+# The setup of galaxies and weak lensing fields is the same as in the basic
+# examples.  We reuse the shell definitions from the :doc:`/basic/save_and_load`
+# example, but we also set up a matching CAMB cosmology to obtain the ``cosmo``
+# object.
 #
 # In addition, there is a generator for intrinsic galaxy ellipticities,
 # following a normal distribution.  The standard deviation is much too small to
@@ -49,6 +51,12 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2)
 # use CAMB cosmology in GLASS
 cosmo = Cosmology.from_camb(pars)
 
+# a redshift grid used below in a number of places
+z = np.linspace(0, 1, 101)
+
+# load matter shell definition
+shells, mweights, cls, lweights = glass.user.load_shells('../basic/shells.npz')
+
 # the intrinsic galaxy ellipticity
 # this is very small so that the galaxy density can be small, too
 sigma_e = 0.01
@@ -57,23 +65,28 @@ sigma_e = 0.01
 n_arcmin2 = 0.01
 
 # localised redshift distribution with the given density
-z = np.linspace(0, 1, 101)
 dndz = np.exp(-(z - 0.5)**2/(0.1)**2)
 dndz *= n_arcmin2/np.trapz(dndz, z)
 
+# galaxy density in each shell
+ngal = glass.galaxies.densities_from_dndz(z, dndz, shells)
+
 # generators for lensing and galaxies
 generators = [
-    glass.cosmology.zspace(0, 1., dz=0.1),
-    glass.matter.mat_wht_redshift(zlin=0.1),
-    glass.camb.camb_matter_cl(pars, lmax),
-    glass.matter.lognormal_matter(nside),
-    glass.lensing.convergence(cosmo),
-    glass.lensing.shear(),
-    glass.galaxies.gal_density_dndz(z, dndz),
-    glass.galaxies.gal_positions_unif(),
-    glass.galaxies.gal_redshifts_nz(),
-    glass.galaxies.gal_ellip_gaussian(sigma_e),
-    glass.galaxies.gal_shear_interp(cosmo),
+    glass.matter.gen_lognormal_matter(cls, nside, ncorr=2),
+    glass.lensing.gen_convergence(lweights),
+    glass.lensing.gen_shear(),
+    glass.galaxies.gen_uniform_positions(ngal),
+    glass.galaxies.gen_redshifts_from_nz(z, dndz, shells),
+    glass.galaxies.gen_ellip_gaussian(sigma_e),
+    glass.galaxies.gen_shear_interp(cosmo),
+]
+
+# values we want from the simulation
+yields = [
+    glass.galaxies.GAL_LON,
+    glass.galaxies.GAL_LAT,
+    glass.galaxies.GAL_SHE,
 ]
 
 
@@ -90,10 +103,7 @@ she = np.zeros(hp.nside2npix(nside), dtype=complex)
 num = np.zeros_like(she, dtype=int)
 
 # iterate and map the galaxy shears to a HEALPix map
-for it in glass.core.generate(generators):
-    gal_lon, gal_lat = it[glass.galaxies.GAL_LON], it[glass.galaxies.GAL_LAT]
-    gal_she = it[glass.galaxies.GAL_SHE]
-
+for gal_lon, gal_lat, gal_she in glass.core.generate(generators, yields):
     gal_pix = hp.ang2pix(nside, gal_lon, gal_lat, lonlat=True)
     s = np.argsort(gal_pix)
     pix, start, count = np.unique(gal_pix[s], return_index=True, return_counts=True)
