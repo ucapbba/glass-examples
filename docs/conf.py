@@ -106,7 +106,7 @@ from sphinx_gallery.sorting import ExplicitOrder, ExampleTitleSortKey  # noqa: E
 sphinx_gallery_conf = {
     'examples_dirs': ['../examples'],
     'gallery_dirs': '.',
-    'filename_pattern': r'/.*\.py',
+    'filename_pattern': r'^(?!.*/basic/shells\.py).*\.py',
     'ignore_pattern': r'/_',
     'subsection_order': ExplicitOrder([
         '../examples/basic',
