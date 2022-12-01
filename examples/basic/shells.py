@@ -1,14 +1,16 @@
 '''
-Saving and loading
-==================
+Defining the simulation
+=======================
 
-This example demonstrates how matter shell definitions can be saved and loaded.
+This example demonstrates how matter shell definitions can be computed, saved,
+and loaded.
 
-This is mostly useful to accelerate repeated computations which use the same
-input parameters, because the angular matter power spectrum for a fixed
-cosmology and matter weight function can be saved and then loaded again.  This
-prevents re-running a costly computation many times over when different models
-are being compared further down the simulation pipeline.
+The computational part is common to all simulations.  The saving and loading is
+useful to accelerate repeated computations which use the same input parameters,
+because the angular matter power spectrum for a fixed cosmology and matter
+weight function can be saved and then loaded again.  This prevents re-running a
+costly computation many times over when different models are being compared
+further down the simulation pipeline.
 
 Under the hood, the saving and loading is done very plainly using
 :func:`numpy.savez` and :func:`numpy.load` for the given arrays.
@@ -68,8 +70,8 @@ lweights = glass.lensing.midpoint_weights(shells, mweights, cosmo)
 # %%
 # Saving
 # ------
-# We can load shell definitions from file.  The full set of saved entries are
-# the shells (``shells``), matter weights (``mweights``), angular matter power
+# We can save shell definitions to file.  The full set of saved entries are the
+# shells (``shells``), matter weights (``mweights``), angular matter power
 # spectra (``cls``), and lensing weights (``lweights``).
 #
 # Internally, the function uses numpy's ``savez``, so the output file will be
@@ -83,12 +85,9 @@ glass.user.save_shells('shells.npz', shells, mweights, cls, lweights)
 # %%
 # Loading
 # -------
-# Saving the shell definition works in the same way.  Not all entries need to
-# provided; for example, here we do not save the lensing weights.
-#
-# Not all entries have to be saved and loaded, in which case some of the return
-# values can be ``None``.  The number and order of returned values is of course
-# always the same.
+# Loading the shell definitions works in the same way.  Because not all entries
+# have to be saved, some of the return values can be ``None``.  The number and
+# order of returned values is of course always the same.
 
 # load previously saved shell definitions (normally in another file)
 shells, mweights, cls, lweights = glass.user.load_shells('shells.npz')

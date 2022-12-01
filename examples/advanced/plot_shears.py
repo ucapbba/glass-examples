@@ -12,7 +12,7 @@ with generators for the intrinsic galaxy ellipticity and the resulting shear.
 # Setup
 # -----
 # The setup of galaxies and weak lensing fields is the same as in the basic
-# examples.  We reuse the shell definitions from the :doc:`/basic/save_and_load`
+# examples.  We reuse the shell definitions from the :doc:`/basic/shells`
 # example, but we also set up a matching CAMB cosmology to obtain the ``cosmo``
 # object.
 #

@@ -20,8 +20,8 @@ integration of the matter fields.
 #
 # We need the cosmology object (``cosmo``) for the lensing interpolation, so we
 # use CAMB to get it back (even though we load the precomputed shell definitions
-# from the :doc:`/basic/save_and_load` example).  We also use CAMB below to
-# compute the theory lensing spectra.
+# from the :doc:`/basic/shells` example).  We also use CAMB below to compute the
+# theory lensing spectra.
 
 import os.path
 import numpy as np

@@ -12,7 +12,7 @@ This example simulates only the matter field in nested shells up to redshift 1.
 # Set up a matter-only GLASS simulation, which only requires angulat matter
 # power spectra and the sampling itself (here: lognormal).
 #
-# Uses the saved shell definitions from the :doc:`/basic/save_and_load` example.
+# Uses the saved shell definitions from the :doc:`/basic/shells` example.
 
 import numpy as np
 import healpy as hp
