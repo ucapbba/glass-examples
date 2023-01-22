@@ -9,32 +9,56 @@ This example simulates only the matter field in nested shells up to redshift 1.
 # %%
 # Setup
 # -----
-# Set up a matter-only GLASS simulation, which only requires angulat matter
-# power spectra and the sampling itself (here: lognormal).
+# Set up a matter-only GLASS simulation, which requires angular matter power
+# spectra and the sampling itself (here: lognormal).
 #
-# Uses the saved shell definitions from the :doc:`/basic/shells` example.
+# Uses the saved angular matter power spectra from the :doc:`/basic/shells`
+# example.
 
 import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and everything in the glass namespace
-import glass.all
-import glass
+# uses the CAMB cosmology which produced the cls
+import camb
+from cosmology import Cosmology
+
+# these are the GLASS imports: matter and random fields
+import glass.matter
+import glass.fields
 
 
-# load the precomputed shell definition
-shells, mweights, cls, lweights = glass.user.load_shells('shells.npz')
+# cosmology for the simulation
+h = 0.7
+Oc = 0.25
+Ob = 0.05
 
 # basic parameters of the simulation
 nside = 1024
-zend = 1.
+lmax = 1000
 
-# generators for a matter-only simulation
-# just the lognormal field with one correlated shell
-generators = [
-    glass.matter.gen_lognormal_matter(cls, nside, ncorr=1),
-]
+# set up CAMB parameters for matter angular power spectrum
+pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
+                       NonLinear=camb.model.NonLinear_both)
+
+# get the cosmology from CAMB
+cosmo = Cosmology.from_camb(pars)
+
+# shells of 200 Mpc in comoving distance spacing
+shells = glass.matter.distance_shells(cosmo, 0., 1., dx=200.)
+
+# uniform matter weight function
+# CAMB requires linear ramp for low redshifts
+weights = glass.matter.uniform_weights(shells, zlin=0.1)
+
+# load precomputed angular matter power spectra
+cls = np.load('cls.npy')
+
+# compute Gaussian cls for lognormal fields with 3 correlated shells
+gls = glass.fields.lognormal_gls(cls, ncorr=3, nside=nside)
+
+# this generator will yield the matter fields in each shell
+matter = glass.fields.generate_lognormal(gls, nside, ncorr=3)
 
 
 # %%
@@ -55,7 +79,7 @@ ax = plt.subplot(111)
 ax.axis('off')
 
 # simulate and project an annulus of each matter shell onto the grid
-for i, delta_i in enumerate(glass.core.generate(generators, glass.matter.DELTA)):
+for i, delta_i in enumerate(matter):
     zmin, zmax = shells[i], shells[i+1]
     g = (zmin <= z) & (z < zmax)
     zg = np.sqrt(1 - (z[g]/zmax)**2)

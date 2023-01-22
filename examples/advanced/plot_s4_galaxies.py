@@ -4,18 +4,19 @@ Stage IV Galaxy Survey
 
 This example simulates a galaxy catalogue from a Stage IV Space Satellite Galaxy
 Survey such as *Euclid* and *Roman* combining the :doc:`/basic/plot_density` and
-:doc:`/basic/plot_lensing` examples with generators for the intrinsic galaxy
-ellipticity and the resulting shear with some auxiliary functions.
+:doc:`/basic/plot_lensing` examples with galaxy ellipticities and galaxy shears,
+as well as using some auxiliary functions.
 
 The focus in this example is mock catalogue generation using auxiliary functions
 built for simulating Stage IV galaxy surveys.
+
 '''
 
 # %%
 # Setup
 # -----
-# The basic setup of galaxies and weak lensing fields is the same as in the
-# previous examples.
+# The setup is essentially the same as in the :doc:`/advanced/plot_shears`
+# example.
 #
 # In addition to a generator for intrinsic galaxy ellipticities,
 # following a normal distribution, we also show how to use auxiliary functions
@@ -28,13 +29,18 @@ import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
 
-# these are the GLASS imports: cosmology and everything in the glass namespace
-from cosmology import Cosmology
-import glass.all
-import glass
-
-# also needs camb itself to get the parameter object
+# use the CAMB cosmology that generated the matter power spectra
 import camb
+from cosmology import Cosmology
+
+# GLASS modules: cosmology and everything in the glass namespace
+import glass.fields
+import glass.points
+import glass.shapes
+import glass.matter
+import glass.lensing
+import glass.galaxies
+import glass.observations
 
 
 # cosmology for the simulation
@@ -43,42 +49,47 @@ Oc = 0.25
 Ob = 0.05
 
 # basic parameters of the simulation
-nside = 512
-lmax = nside
-
-# set up the random number generator
-rng = np.random.default_rng(seed=42)
+nside = lmax = 256
 
 # set up CAMB parameters for matter angular power spectrum
 pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
                        NonLinear=camb.model.NonLinear_both)
 
-# use CAMB cosmology
+# get the cosmology from CAMB
 cosmo = Cosmology.from_camb(pars)
-
-# redshift grid that will be used for a number of continuous functions
-z = np.linspace(0, 3, 1000)
-
 
 # %%
 # Set up the matter sector.
 
-# use matter shells with 200 Mpc thickness in comoving distance
+# shells of 200 Mpc in comoving distance spacing
 shells = glass.matter.distance_shells(cosmo, 0., 3., dx=200.)
 
-# use a matter weight function that is uniform in redshift
-mweights = glass.matter.redshift_weights(shells, zlin=0.1)
+# uniform matter weight function
+# CAMB requires linear ramp for low redshifts
+weights = glass.matter.uniform_weights(shells, zlin=0.1)
 
-# compute the angular matter power spectra
-cls = glass.camb.matter_cls(pars, lmax, mweights)
+# compute the angular matter power spectra of the shells with CAMB
+cls = glass.camb.matter_cls(pars, lmax, weights)
 
+# compute Gaussian cls for lognormal fields for 3 correlated shells
+# putting nside here means that the HEALPix pixel window function is applied
+gls = glass.fields.lognormal_gls(cls, nside=nside, lmax=lmax, ncorr=3)
+
+# generator for lognormal matter fields
+matter = glass.fields.generate_lognormal(gls, nside, ncorr=3)
 
 # %%
 # Set up the lensing sector.
 
-# compute the midpoint lensing weights
-lweights = glass.lensing.midpoint_weights(shells, mweights, cosmo)
+# compute the effective redshifts of the matter shells
+# these will be the source redshifts of the lensing planes
+zlens = glass.matter.effective_redshifts(weights)
 
+# compute the multi-plane lensing weights for these redshifts
+wlens = glass.lensing.multi_plane_weights(zlens, weights)
+
+# this will compute the convergence field iteratively
+convergence = glass.lensing.MultiPlaneConvergence(cosmo)
 
 # %%
 # Set up the galaxies sector.
@@ -87,11 +98,12 @@ lweights = glass.lensing.midpoint_weights(shells, mweights, cosmo)
 n_arcmin2 = 0.3
 
 # true redshift distribution following a Smail distribution
+z = np.arange(0., 3., 0.01)
 dndz = glass.observations.smail_nz(z, z_mode=0.9, alpha=2., beta=1.5)
 dndz *= n_arcmin2
 
 # compute the galaxy number density in each shell
-ngal = glass.galaxies.densities_from_dndz(z, dndz, shells)
+ngal = glass.galaxies.density_from_dndz(z, dndz, bins=shells)
 
 # compute bin edges with equal density
 nbins = 10
@@ -104,14 +116,15 @@ sigma_z0 = 0.03
 tomo_nz = glass.observations.tomo_nz_gausserr(z, dndz, sigma_z0, zedges)
 
 # constant bias parameter for all shells
-b = 1.2
+bias = 1.2
 
-# sigma_ellipticity as expected for a Stage-IV survey
+# ellipticity standard deviation as expected for a Stage-IV survey
 sigma_e = 0.27
 
 # %%
 # Plotting the overall redshift distribution and the
 # distribution for each of the equal density tomographic bins
+
 plt.figure()
 plt.title('redshift distributions')
 sum_nz = np.zeros_like(tomo_nz[0])
@@ -142,43 +155,51 @@ plt.show()
 # Simulate the galaxies with shears.  In each iteration, get the quantities of
 # interest to build our mock catalogue.
 
-# generators for clustering and lensing
-generators = [
-    glass.matter.gen_lognormal_matter(cls, nside, ncorr=2, rng=rng),
-    glass.lensing.gen_convergence(lweights),
-    glass.lensing.gen_shear(),
-    glass.observations.gen_constant_visibility(vis),
-    glass.galaxies.gen_positions_from_matter(ngal, b, rng=rng),
-    glass.galaxies.gen_redshifts_from_nz(z, tomo_nz, shells, rng=rng),
-    glass.galaxies.gen_ellip_intnorm(sigma_e, rng=rng),
-    glass.galaxies.gen_shear_interp(cosmo),
-]
+# we will store the catalogue as a structured numpy array, initially empty
+catalogue = np.empty(0, dtype=[('RA', float), ('DEC', float), ('TRUE_Z', float),
+                               ('G1', float), ('G2', float), ('TOMO_ID', int)])
 
-# values we want from the simulation
-yields = [
-    glass.galaxies.GAL_LON,
-    glass.galaxies.GAL_LAT,
-    glass.galaxies.GAL_Z,
-    glass.galaxies.GAL_SHE,
-    glass.galaxies.GAL_POP,
-]
+# simulate the matter fields in the main loop, and build up the catalogue
+for i, delta_i in enumerate(matter):
 
-# we will store the catalogue as a dictionary
-catalogue = {'RA': np.array([]), 'DEC': np.array([]), 'TRUE_Z': np.array([]),
-             'G1': np.array([]), 'G2': np.array([]), 'TOMO_ID': np.array([])}
+    # boundary redshifts for this shell
+    zmin, zmax = shells[i], shells[i+1]
 
-# iterate and store the quantities of interest for our mock catalogue
-for gal_lon, gal_lat, gal_z, gal_she, gal_pop in glass.core.generate(generators, yields):
-    # let's assume here that lon lat here are RA and DEC:
-    catalogue['RA'] = np.append(catalogue['RA'], gal_lon)
-    catalogue['DEC'] = np.append(catalogue['DEC'], gal_lat)
-    catalogue['TRUE_Z'] = np.append(catalogue['TRUE_Z'], gal_z)
-    catalogue['G1'] = np.append(catalogue['G1'], gal_she.real)
-    catalogue['G2'] = np.append(catalogue['G2'], gal_she.imag)
-    catalogue['TOMO_ID'] = np.append(catalogue['TOMO_ID'], gal_pop)
+    # compute the lensing maps for this shell
+    convergence.add_plane(delta_i, zlens[i], wlens[i])
+    kappa_i = convergence.kappa
+    gamm1_i, gamm2_i = glass.lensing.shear_from_convergence(kappa_i)
+
+    # generate galaxy positions from the matter density contrast
+    gal_lon, gal_lat = glass.points.positions_from_delta(ngal[i], delta_i, bias, vis)
+
+    # number of galaxies in this shell
+    gal_siz = len(gal_lon)
+
+    # generate random redshifts from the provided nz
+    gal_z, gal_pop = glass.galaxies.redshifts_from_nz(gal_siz, z, tomo_nz,
+                                                      zmin=zmin, zmax=zmax)
+
+    # generate galaxy ellipticities from the chosen distribution
+    gal_eps = glass.shapes.ellipticity_intnorm(gal_siz, sigma_e)
+
+    # apply the shear fields to the ellipticities
+    gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
+                                          kappa_i, gamm1_i, gamm2_i)
+
+    # make a mini-catalogue for the new rows
+    rows = np.empty(gal_siz, dtype=catalogue.dtype)
+    rows['RA'] = gal_lon
+    rows['DEC'] = gal_lat
+    rows['TRUE_Z'] = gal_z
+    rows['G1'] = gal_she.real
+    rows['G2'] = gal_she.imag
+    rows['TOMO_ID'] = gal_pop
+
+    # add the new rows to the catalogue
+    catalogue = np.append(catalogue, rows)
 
 print(f'Total Number of galaxies sampled: {len(catalogue["TRUE_Z"]):,}')
-
 
 # %%
 # Catalogue checks
