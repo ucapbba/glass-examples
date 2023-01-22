@@ -60,7 +60,7 @@ shells = glass.matter.distance_shells(cosmo, 0., 1., dx=200.)
 # CAMB requires linear ramp for low redshifts
 weights = glass.matter.uniform_weights(shells, zlin=0.1)
 
-# compute angular matter power spectra with CAMB
+# load the angular matter power spectra previously computed with CAMB
 cls = np.load('cls.npy')
 
 # %%
