@@ -76,7 +76,7 @@ html_theme_options = {
         },
         {
             'name': 'GitHub',
-            'url': 'https://github.com/glass-dev/examples',
+            'url': 'https://github.com/glass-dev/glass-examples',
             'icon': 'fab fa-github',
             'type': 'fontawesome',
         },
