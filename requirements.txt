@@ -1,3 +1,4 @@
 sphinx<6
 sphinx-gallery
-pydata-sphinx-theme
+furo
+sphinxcontrib-katex

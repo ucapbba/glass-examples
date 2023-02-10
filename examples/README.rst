@@ -1,10 +1,12 @@
 
-Examples for GLASS
-==================
+Examples for *GLASS*
+====================
 
-These examples show how GLASS, the Generator for Large Scale Structure, can be
-used in practice.  They are often a good starting point for more complicated and
-realistic simulations.
+These examples show how `GLASS`__, the Generator for Large Scale Structure, can
+be used in practice.  They are often a good starting point for more complicated
+and realistic simulations.
+
+__ https://glass.readthedocs.io
 
 To run the examples yourself, you need to have GLASS installed.  The latest
 release is available via pip::
