@@ -54,11 +54,11 @@ html_theme = 'furo'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_logo = '_static/glass.png'
+html_logo = '_static/logo.png'
 
-html_title = project
+html_title = 'GLASS examples'
 
-html_favicon = '_static/glass.ico'
+html_favicon = '_static/favicon.ico'
 
 html_theme_options = {
     'footer_icons': [

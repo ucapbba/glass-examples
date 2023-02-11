@@ -2,6 +2,11 @@
 Examples for *GLASS*
 ====================
 
+.. toctree::
+   :hidden:
+
+   Documentation <https://glass.readthedocs.io>
+
 These examples show how `GLASS`__, the Generator for Large Scale Structure, can
 be used in practice.  They are often a good starting point for more complicated
 and realistic simulations.
