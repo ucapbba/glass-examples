@@ -41,6 +41,7 @@ import glass.shapes
 import glass.lensing
 import glass.galaxies
 import glass.observations
+import glass.camb
 
 
 # cosmology for the simulation
