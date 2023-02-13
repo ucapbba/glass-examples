@@ -35,7 +35,7 @@ z = np.linspace(0, 3, 301)
 dndz = n_arcmin2 * glass.observations.smail_nz(z, 1.0, 2.2, 1.5)
 
 # compute the over galaxy number density on the sphere
-ngal = glass.galaxies.density_from_dndz(z, dndz)
+ngal = np.trapz(dndz, z)
 
 
 # %%

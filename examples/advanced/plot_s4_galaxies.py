@@ -34,10 +34,10 @@ import camb
 from cosmology import Cosmology
 
 # GLASS modules: cosmology and everything in the glass namespace
+import glass.shells
 import glass.fields
 import glass.points
 import glass.shapes
-import glass.matter
 import glass.lensing
 import glass.galaxies
 import glass.observations
@@ -62,14 +62,13 @@ cosmo = Cosmology.from_camb(pars)
 # Set up the matter sector.
 
 # shells of 200 Mpc in comoving distance spacing
-shells = glass.matter.distance_shells(cosmo, 0., 3., dx=200.)
+zb = glass.shells.distance_grid(cosmo, 0., 3., dx=200.)
 
-# uniform matter weight function
-# CAMB requires linear ramp for low redshifts
-weights = glass.matter.uniform_weights(shells, zlin=0.1)
+# tophat window function for shells
+zs, ws = glass.shells.tophat_windows(zb)
 
 # compute the angular matter power spectra of the shells with CAMB
-cls = glass.camb.matter_cls(pars, lmax, weights)
+cls = glass.camb.matter_cls(pars, lmax, zs, ws)
 
 # compute Gaussian cls for lognormal fields for 3 correlated shells
 # putting nside here means that the HEALPix pixel window function is applied
@@ -80,13 +79,6 @@ matter = glass.fields.generate_lognormal(gls, nside, ncorr=3)
 
 # %%
 # Set up the lensing sector.
-
-# compute the effective redshifts of the matter shells
-# these will be the source redshifts of the lensing planes
-zlens = glass.matter.effective_redshifts(weights)
-
-# compute the multi-plane lensing weights for these redshifts
-wlens = glass.lensing.multi_plane_weights(zlens, weights)
 
 # this will compute the convergence field iteratively
 convergence = glass.lensing.MultiPlaneConvergence(cosmo)
@@ -101,9 +93,6 @@ n_arcmin2 = 0.3
 z = np.arange(0., 3., 0.01)
 dndz = glass.observations.smail_nz(z, z_mode=0.9, alpha=2., beta=1.5)
 dndz *= n_arcmin2
-
-# compute the galaxy number density in each shell
-ngal = glass.galaxies.density_from_dndz(z, dndz, bins=shells)
 
 # compute bin edges with equal density
 nbins = 10
@@ -162,23 +151,28 @@ catalogue = np.empty(0, dtype=[('RA', float), ('DEC', float), ('TRUE_Z', float),
 # simulate the matter fields in the main loop, and build up the catalogue
 for i, delta_i in enumerate(matter):
 
-    # boundary redshifts for this shell
-    zmin, zmax = shells[i], shells[i+1]
-
     # compute the lensing maps for this shell
-    convergence.add_plane(delta_i, zlens[i], wlens[i])
+    convergence.add_window(delta_i, zs[i], ws[i])
     kappa_i = convergence.kappa
     gamm1_i, gamm2_i = glass.lensing.shear_from_convergence(kappa_i)
 
+    # the true galaxy distribution in this shell
+    z_i, dndz_i = glass.shells.restrict(z, dndz, zs[i], ws[i])
+
+    # the photometric galaxy distribution in this shell
+    tomo_z_i, tomo_nz_i = glass.shells.restrict(z, tomo_nz, zs[i], ws[i])
+
+    # integrate dndz to get the total galaxy density in this shell
+    ngal = np.trapz(dndz_i, z_i)
+
     # generate galaxy positions from the matter density contrast
-    gal_lon, gal_lat = glass.points.positions_from_delta(ngal[i], delta_i, bias, vis)
+    gal_lon, gal_lat = glass.points.positions_from_delta(ngal, delta_i, bias, vis)
 
     # number of galaxies in this shell
     gal_siz = len(gal_lon)
 
     # generate random redshifts from the provided nz
-    gal_z, gal_pop = glass.galaxies.redshifts_from_nz(gal_siz, z, tomo_nz,
-                                                      zmin=zmin, zmax=zmax)
+    gal_z, gal_pop = glass.galaxies.redshifts_from_nz(gal_siz, tomo_z_i, tomo_nz_i)
 
     # generate galaxy ellipticities from the chosen distribution
     gal_eps = glass.shapes.ellipticity_intnorm(gal_siz, sigma_e)

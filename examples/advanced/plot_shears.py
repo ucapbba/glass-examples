@@ -25,10 +25,10 @@ import camb
 from cosmology import Cosmology
 
 # GLASS modules: cosmology and everything in the glass namespace
+import glass.shells
 import glass.fields
 import glass.points
 import glass.shapes
-import glass.matter
 import glass.lensing
 import glass.galaxies
 from glass.math import ARCMIN2_SPHERE
@@ -50,11 +50,10 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
 cosmo = Cosmology.from_camb(pars)
 
 # shells of 200 Mpc in comoving distance spacing
-shells = glass.matter.distance_shells(cosmo, 0., 1., dx=200.)
+zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
-# uniform matter weight function
-# CAMB requires linear ramp for low redshifts
-weights = glass.matter.uniform_weights(shells, zlin=0.1)
+# tophat window function for shells
+zs, ws = glass.shells.tophat_windows(zb)
 
 # load the angular matter power spectra previously computed with CAMB
 cls = np.load('../basic/cls.npy')
@@ -74,13 +73,6 @@ matter = glass.fields.generate_lognormal(gls, nside, ncorr=3)
 # Lensing
 # -------
 
-# compute the effective redshifts of the matter shells
-# these will be the source redshifts of the lensing planes
-zlens = glass.matter.effective_redshifts(weights)
-
-# compute the multi-plane lensing weights for these redshifts
-wlens = glass.lensing.multi_plane_weights(zlens, weights)
-
 # this will compute the convergence field iteratively
 convergence = glass.lensing.MultiPlaneConvergence(cosmo)
 
@@ -99,9 +91,6 @@ n_arcmin2 = 0.01
 z = np.arange(0., 2., 0.01)
 dndz = np.exp(-(z - 0.5)**2/(0.1)**2)
 dndz *= n_arcmin2/np.trapz(dndz, z)
-
-# galaxy density in each shell
-ngal = glass.galaxies.density_from_dndz(z, dndz, bins=shells)
 
 # %%
 # Simulation
@@ -129,12 +118,18 @@ she = np.zeros(npix, dtype=complex)
 for i, delta_i in enumerate(matter):
 
     # compute the lensing maps for this shell
-    convergence.add_plane(delta_i, zlens[i], wlens[i])
+    convergence.add_window(delta_i, zs[i], ws[i])
     kappa_i = convergence.kappa
     gamm1_i, gamm2_i = glass.lensing.shear_from_convergence(kappa_i)
 
+    # true galaxy redshift distribution in this shell
+    z_i, dndz_i = glass.shells.restrict(z, dndz, zs[i], ws[i])
+
+    # galaxy density in this shell
+    ngal = np.trapz(dndz_i, z_i)
+
     # generate galaxy positions uniformly over the sphere
-    gal_lon, gal_lat = glass.points.uniform_positions(ngal[i])
+    gal_lon, gal_lat = glass.points.uniform_positions(ngal)
 
     # generate galaxy ellipticities from the chosen distribution
     gal_eps = glass.shapes.ellipticity_intnorm(len(gal_lon), sigma_e)

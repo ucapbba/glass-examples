@@ -24,7 +24,7 @@ import camb
 from cosmology import Cosmology
 
 # these are the GLASS imports: matter and random fields
-import glass.matter
+import glass.shells
 import glass.fields
 
 
@@ -45,11 +45,10 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
 cosmo = Cosmology.from_camb(pars)
 
 # shells of 200 Mpc in comoving distance spacing
-shells = glass.matter.distance_shells(cosmo, 0., 1., dx=200.)
+zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
-# uniform matter weight function
-# CAMB requires linear ramp for low redshifts
-weights = glass.matter.uniform_weights(shells, zlin=0.1)
+# tophat window function for shells
+zs, ws = glass.shells.tophat_windows(zb)
 
 # load precomputed angular matter power spectra
 cls = np.load('cls.npy')
@@ -69,7 +68,7 @@ matter = glass.fields.generate_lognormal(gls, nside, ncorr=3)
 
 # make a 2d grid in redshift
 n = 2000
-zend = 1.05*shells[-1]
+zend = 1.05*zb[-1]
 x, y = np.mgrid[-zend:zend:1j*n, -zend:zend:1j*n]
 z = np.hypot(x, y)
 grid = np.full(z.shape, np.nan)
@@ -80,7 +79,7 @@ ax.axis('off')
 
 # simulate and project an annulus of each matter shell onto the grid
 for i, delta_i in enumerate(matter):
-    zmin, zmax = shells[i], shells[i+1]
+    zmin, zmax = zb[i], zb[i+1]
     g = (zmin <= z) & (z < zmax)
     zg = np.sqrt(1 - (z[g]/zmax)**2)
     theta, phi = hp.vec2ang(np.transpose([x[g]/zmax, y[g]/zmax, zg]))

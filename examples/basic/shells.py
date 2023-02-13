@@ -21,7 +21,7 @@ import numpy as np
 import camb
 from cosmology import Cosmology
 
-import glass.matter
+import glass.shells
 import glass.camb
 
 
@@ -41,14 +41,14 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
 cosmo = Cosmology.from_camb(pars)
 
 # shells of 200 Mpc in comoving distance spacing
-shells = glass.matter.distance_shells(cosmo, 0., 1., dx=200.)
+zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
 # uniform matter weight function
 # CAMB requires linear ramp for low redshifts
-weights = glass.matter.uniform_weights(shells, zlin=0.1)
+zs, ws = glass.shells.tophat_windows(zb, wfunc=glass.camb.camb_tophat_wfunc)
 
 # compute angular matter power spectra with CAMB
-cls = glass.camb.matter_cls(pars, lmax, weights)
+cls = glass.camb.matter_cls(pars, lmax, zs, ws)
 
 
 # %%

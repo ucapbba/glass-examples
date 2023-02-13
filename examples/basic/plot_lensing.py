@@ -32,8 +32,8 @@ import camb
 from cosmology import Cosmology
 
 # GLASS imports
+import glass.shells
 import glass.fields
-import glass.matter
 import glass.lensing
 import glass.galaxies
 
@@ -54,11 +54,10 @@ pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
 cosmo = Cosmology.from_camb(pars)
 
 # shells of 200 Mpc in comoving distance spacing
-shells = glass.matter.distance_shells(cosmo, 0., 1., dx=200.)
+zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
 # uniform matter weight function
-# CAMB requires linear ramp for low redshifts
-weights = glass.matter.uniform_weights(shells, zlin=0.1)
+zs, ws = glass.shells.tophat_windows(zb)
 
 # load the angular matter power spectra previously computed with CAMB
 cls = np.load('cls.npy')
@@ -78,13 +77,6 @@ matter = glass.fields.generate_lognormal(gls, nside, ncorr=3)
 # Lensing
 # -------
 
-# compute the effective redshifts of the matter shells
-# these will be the source redshifts of the lensing planes
-zlens = glass.matter.effective_redshifts(weights)
-
-# compute the multi-plane lensing weights for these redshifts
-wlens = glass.lensing.multi_plane_weights(zlens, weights)
-
 # this will compute the convergence field iteratively
 convergence = glass.lensing.MultiPlaneConvergence(cosmo)
 
@@ -96,10 +88,6 @@ convergence = glass.lensing.MultiPlaneConvergence(cosmo)
 # the actual density per arcmin2 does not matter here, it is never used
 z = np.linspace(0, 1, 101)
 dndz = np.exp(-(z - 0.5)**2/(0.1)**2)
-
-# compute the number density of galaxies in each shell
-# this will be used to compute a weighted sum of the lensing fields
-ngal = glass.galaxies.density_from_dndz(z, dndz, bins=shells)
 
 # %%
 # Simulation
@@ -115,8 +103,8 @@ gamm2_bar = np.zeros(12*nside**2)
 # main loop to simulate the matter fields iterative
 for i, delta_i in enumerate(matter):
 
-    # add lensing plane
-    convergence.add_plane(delta_i, zlens[i], wlens[i])
+    # add lensing plane from the window function of this shell
+    convergence.add_window(delta_i, zs[i], ws[i])
 
     # get convergence field
     kappa_i = convergence.kappa
@@ -124,10 +112,19 @@ for i, delta_i in enumerate(matter):
     # compute shear field
     gamm1_i, gamm2_i = glass.lensing.shear_from_convergence(kappa_i)
 
+    # get the restriction of the dndz to this shell
+    z_i, dndz_i = glass.shells.restrict(z, dndz, zs[i], ws[i])
+
+    # compute the galaxy density in this shell
+    ngal = np.trapz(dndz_i, z_i)
+
     # add to mean fields using the galaxy number density as weight
-    kappa_bar += ngal[i] * kappa_i
-    gamm1_bar += ngal[i] * gamm1_i
-    gamm2_bar += ngal[i] * gamm2_i
+    kappa_bar += ngal * kappa_i
+    gamm1_bar += ngal * gamm1_i
+    gamm2_bar += ngal * gamm2_i
+
+# compute the overall galaxy density
+ngal = np.trapz(dndz, z)
 
 # normalise mean fields by the total galaxy number density
 kappa_bar /= np.sum(ngal)
