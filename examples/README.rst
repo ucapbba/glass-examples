@@ -13,10 +13,12 @@ and realistic simulations.
 
 __ https://glass.readthedocs.io
 
-To run the examples yourself, you need to have GLASS installed.  The latest
-release is available via pip::
+To run the examples yourself, you need to have GLASS installed.  To install the
+specific version of GLASS for the examples you are reading:
 
-    $ pip install glass
+.. parsed-literal::
+
+    $ pip install |pip_package|
 
 The examples currently require `CAMB`__ to produce angular matter power spectra
 and for the cosmological background.  Make sure you have CAMB installed::

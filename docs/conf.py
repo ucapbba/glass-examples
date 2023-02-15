@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-#import os
-#import sys
-#sys.path.insert(0, os.path.abspath('..'))
+import os
+# import sys
+# sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -79,6 +79,20 @@ html_theme_options = {
 
 html_css_files = [
 ]
+
+# dynamically generate the correct installation instructions for this version
+rtd_version = os.getenv('READTHEDOCS_VERSION', 'stable')
+if rtd_version == 'latest':
+    pip_package = 'git+https://github.com/glass-dev/glass.git'
+elif rtd_version == 'stable':
+    pip_package = 'glass'
+elif rtd_version.startswith('v'):
+    pip_package = f'glass=={rtd_version[1:]}'
+else:
+    pip_package = 'glass'
+rst_epilog = f'''
+.. |pip_package| replace:: {pip_package}
+'''
 
 
 # -- Intersphinx -------------------------------------------------------------
