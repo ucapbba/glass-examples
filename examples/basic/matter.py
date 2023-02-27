@@ -47,9 +47,6 @@ cosmo = Cosmology.from_camb(pars)
 # shells of 200 Mpc in comoving distance spacing
 zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
-# tophat window function for shells
-zs, ws = glass.shells.tophat_windows(zb)
-
 # load precomputed angular matter power spectra
 cls = np.load('cls.npy')
 

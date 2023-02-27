@@ -49,7 +49,7 @@ cosmo = Cosmology.from_camb(pars)
 zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
 # uniform matter weight function
-zs, ws = glass.shells.tophat_windows(zb)
+ws = glass.shells.tophat_windows(zb)
 
 # load the angular matter power spectra previously computed with CAMB
 cls = np.load('cls.npy')
@@ -87,7 +87,7 @@ cube = np.zeros((zcub.size-1,)*3)
 for i, delta_i in enumerate(matter):
 
     # restrict galaxy distribution to this shell
-    z_i, dndz_i = glass.shells.restrict(z, dndz, zs[i], ws[i])
+    z_i, dndz_i = glass.shells.restrict(z, dndz, ws[i])
 
     # compute galaxy density in this shell
     ngal = np.trapz(dndz_i, z_i)
@@ -96,7 +96,7 @@ for i, delta_i in enumerate(matter):
     gal_lon, gal_lat = glass.points.positions_from_delta(ngal, delta_i)
 
     # sample redshifts uniformly in shell
-    gal_z, _ = glass.galaxies.redshifts_from_nz(len(gal_lon), zs[i], ws[i])
+    gal_z, _ = glass.galaxies.redshifts_from_nz(len(gal_lon), ws[i].za, ws[i].wa)
 
     # add counts to cube
     z1 = gal_z*np.cos(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))

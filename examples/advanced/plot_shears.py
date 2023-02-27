@@ -53,7 +53,7 @@ cosmo = Cosmology.from_camb(pars)
 zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
 # tophat window function for shells
-zs, ws = glass.shells.tophat_windows(zb)
+ws = glass.shells.tophat_windows(zb)
 
 # load the angular matter power spectra previously computed with CAMB
 cls = np.load('../basic/cls.npy')
@@ -118,12 +118,12 @@ she = np.zeros(npix, dtype=complex)
 for i, delta_i in enumerate(matter):
 
     # compute the lensing maps for this shell
-    convergence.add_window(delta_i, zs[i], ws[i])
+    convergence.add_window(delta_i, ws[i])
     kappa_i = convergence.kappa
     gamm1_i, gamm2_i = glass.lensing.shear_from_convergence(kappa_i)
 
     # true galaxy redshift distribution in this shell
-    z_i, dndz_i = glass.shells.restrict(z, dndz, zs[i], ws[i])
+    z_i, dndz_i = glass.shells.restrict(z, dndz, ws[i])
 
     # galaxy density in this shell
     ngal = np.trapz(dndz_i, z_i)

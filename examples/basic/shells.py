@@ -45,10 +45,10 @@ zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
 # uniform matter weight function
 # CAMB requires linear ramp for low redshifts
-zs, ws = glass.shells.tophat_windows(zb, wfunc=glass.camb.camb_tophat_wfunc)
+ws = glass.shells.tophat_windows(zb, weight=glass.camb.camb_tophat_weight)
 
 # compute angular matter power spectra with CAMB
-cls = glass.camb.matter_cls(pars, lmax, zs, ws)
+cls = glass.camb.matter_cls(pars, lmax, ws)
 
 
 # %%

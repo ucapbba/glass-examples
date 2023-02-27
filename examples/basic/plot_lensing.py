@@ -57,7 +57,7 @@ cosmo = Cosmology.from_camb(pars)
 zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
 
 # uniform matter weight function
-zs, ws = glass.shells.tophat_windows(zb)
+ws = glass.shells.tophat_windows(zb)
 
 # load the angular matter power spectra previously computed with CAMB
 cls = np.load('cls.npy')
@@ -104,7 +104,7 @@ gamm2_bar = np.zeros(12*nside**2)
 for i, delta_i in enumerate(matter):
 
     # add lensing plane from the window function of this shell
-    convergence.add_window(delta_i, zs[i], ws[i])
+    convergence.add_window(delta_i, ws[i])
 
     # get convergence field
     kappa_i = convergence.kappa
@@ -113,7 +113,7 @@ for i, delta_i in enumerate(matter):
     gamm1_i, gamm2_i = glass.lensing.shear_from_convergence(kappa_i)
 
     # get the restriction of the dndz to this shell
-    z_i, dndz_i = glass.shells.restrict(z, dndz, zs[i], ws[i])
+    z_i, dndz_i = glass.shells.restrict(z, dndz, ws[i])
 
     # compute the galaxy density in this shell
     ngal = np.trapz(dndz_i, z_i)

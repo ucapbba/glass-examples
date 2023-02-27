@@ -65,11 +65,11 @@ cosmo = Cosmology.from_camb(pars)
 # shells of 200 Mpc in comoving distance spacing
 zb = glass.shells.distance_grid(cosmo, 0., 3., dx=200.)
 
-# tophat window function for shells
-zs, ws = glass.shells.tophat_windows(zb)
+# tophat window functions for shells
+ws = glass.shells.tophat_windows(zb)
 
 # compute the angular matter power spectra of the shells with CAMB
-cls = glass.camb.matter_cls(pars, lmax, zs, ws)
+cls = glass.camb.matter_cls(pars, lmax, ws)
 
 # compute Gaussian cls for lognormal fields for 3 correlated shells
 # putting nside here means that the HEALPix pixel window function is applied
@@ -153,15 +153,15 @@ catalogue = np.empty(0, dtype=[('RA', float), ('DEC', float), ('TRUE_Z', float),
 for i, delta_i in enumerate(matter):
 
     # compute the lensing maps for this shell
-    convergence.add_window(delta_i, zs[i], ws[i])
+    convergence.add_window(delta_i, ws[i])
     kappa_i = convergence.kappa
     gamm1_i, gamm2_i = glass.lensing.shear_from_convergence(kappa_i)
 
     # the true galaxy distribution in this shell
-    z_i, dndz_i = glass.shells.restrict(z, dndz, zs[i], ws[i])
+    z_i, dndz_i = glass.shells.restrict(z, dndz, ws[i])
 
     # the photometric galaxy distribution in this shell
-    tomo_z_i, tomo_nz_i = glass.shells.restrict(z, tomo_nz, zs[i], ws[i])
+    tomo_z_i, tomo_nz_i = glass.shells.restrict(z, tomo_nz, ws[i])
 
     # integrate dndz to get the total galaxy density in this shell
     ngal = np.trapz(dndz_i, z_i)
