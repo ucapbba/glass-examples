@@ -31,7 +31,7 @@ import glass.points
 import glass.shapes
 import glass.lensing
 import glass.galaxies
-from glass.math import ARCMIN2_SPHERE
+from glass.core.constants import ARCMIN2_SPHERE
 
 
 # cosmology for the simulation
@@ -129,10 +129,10 @@ for i, delta_i in enumerate(matter):
     ngal = np.trapz(dndz_i, z_i)
 
     # generate galaxy positions uniformly over the sphere
-    gal_lon, gal_lat = glass.points.uniform_positions(ngal)
+    gal_lon, gal_lat, gal_count = glass.points.uniform_positions(ngal)
 
     # generate galaxy ellipticities from the chosen distribution
-    gal_eps = glass.shapes.ellipticity_intnorm(len(gal_lon), sigma_e)
+    gal_eps = glass.shapes.ellipticity_intnorm(gal_count, sigma_e)
 
     # apply the shear fields to the ellipticities
     gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,

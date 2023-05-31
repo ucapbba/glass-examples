@@ -93,10 +93,10 @@ for i, delta_i in enumerate(matter):
     ngal = np.trapz(dndz_i, z_i)
 
     # simulate positions from matter density
-    gal_lon, gal_lat = glass.points.positions_from_delta(ngal, delta_i)
+    gal_lon, gal_lat, gal_count = glass.points.positions_from_delta(ngal, delta_i)
 
     # sample redshifts uniformly in shell
-    gal_z, _ = glass.galaxies.redshifts_from_nz(len(gal_lon), ws[i].za, ws[i].wa)
+    gal_z = glass.galaxies.redshifts_from_nz(gal_count, ws[i].za, ws[i].wa)
 
     # add counts to cube
     z1 = gal_z*np.cos(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))

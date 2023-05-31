@@ -21,7 +21,7 @@ import glass.galaxies
 import glass.observations
 
 # how many arcmin2 over the entire sphere
-from glass.math import ARCMIN2_SPHERE
+from glass.core.constants import ARCMIN2_SPHERE
 
 
 # galaxy density
@@ -48,7 +48,7 @@ ngal = np.trapz(dndz, z)
 n = np.random.poisson(ngal * ARCMIN2_SPHERE)
 
 # sample n true redshifts
-ztrue, _ = glass.galaxies.redshifts_from_nz(n, z, dndz)
+ztrue = glass.galaxies.redshifts_from_nz(n, z, dndz)
 
 # sample n photometric redshifts
 zphot = glass.galaxies.gaussian_phz(ztrue, phz_sigma_0)

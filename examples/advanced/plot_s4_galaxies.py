@@ -95,15 +95,12 @@ z = np.arange(0., 3., 0.01)
 dndz = glass.observations.smail_nz(z, z_mode=0.9, alpha=2., beta=1.5)
 dndz *= n_arcmin2
 
-# compute bin edges with equal density
+# compute tomographic redshift bin edges with equal density
 nbins = 10
-zedges = glass.observations.equal_dens_zbins(z, dndz, nbins=nbins)
+zbins = glass.observations.equal_dens_zbins(z, dndz, nbins=nbins)
 
 # photometric redshift error
 sigma_z0 = 0.03
-
-# split distribution by tomographic bin, assuming photometric redshift errors
-tomo_nz = glass.observations.tomo_nz_gausserr(z, dndz, sigma_z0, zedges)
 
 # constant bias parameter for all shells
 bias = 1.2
@@ -111,23 +108,6 @@ bias = 1.2
 # ellipticity standard deviation as expected for a Stage-IV survey
 sigma_e = 0.27
 
-# %%
-# Plotting the overall redshift distribution and the
-# distribution for each of the equal density tomographic bins
-
-plt.figure()
-plt.title('redshift distributions')
-sum_nz = np.zeros_like(tomo_nz[0])
-for nz in tomo_nz:
-    plt.fill_between(z, nz, alpha=0.5)
-    sum_nz = sum_nz + nz
-plt.fill_between(z, dndz, alpha=0.2, label='dn/dz')
-plt.plot(z, sum_nz, ls='--', label='sum of the bins')
-plt.ylabel('dN/dz - gal/arcmin2')
-plt.xlabel('z')
-plt.legend()
-plt.tight_layout()
-plt.show()
 
 # %%
 # Make a visibility map typical of a space telescope survey, seeing both
@@ -146,8 +126,9 @@ plt.show()
 # interest to build our mock catalogue.
 
 # we will store the catalogue as a structured numpy array, initially empty
-catalogue = np.empty(0, dtype=[('RA', float), ('DEC', float), ('TRUE_Z', float),
-                               ('G1', float), ('G2', float), ('TOMO_ID', int)])
+catalogue = np.empty(0, dtype=[('RA', float), ('DEC', float),
+                               ('Z_TRUE', float), ('PHZ', float), ('ZBIN', int),
+                               ('G1', float), ('G2', float)])
 
 # simulate the matter fields in the main loop, and build up the catalogue
 for i, delta_i in enumerate(matter):
@@ -160,41 +141,42 @@ for i, delta_i in enumerate(matter):
     # the true galaxy distribution in this shell
     z_i, dndz_i = glass.shells.restrict(z, dndz, ws[i])
 
-    # the photometric galaxy distribution in this shell
-    tomo_z_i, tomo_nz_i = glass.shells.restrict(z, tomo_nz, ws[i])
-
     # integrate dndz to get the total galaxy density in this shell
     ngal = np.trapz(dndz_i, z_i)
 
     # generate galaxy positions from the matter density contrast
-    gal_lon, gal_lat = glass.points.positions_from_delta(ngal, delta_i, bias, vis)
-
-    # number of galaxies in this shell
-    gal_siz = len(gal_lon)
+    gal_lon, gal_lat, gal_count = glass.points.positions_from_delta(ngal, delta_i, bias, vis)
 
     # generate random redshifts from the provided nz
-    gal_z, gal_pop = glass.galaxies.redshifts_from_nz(gal_siz, tomo_z_i, tomo_nz_i)
+    gal_z = glass.galaxies.redshifts_from_nz(gal_count, z_i, dndz_i)
+
+    # generator photometric redshifts using a Gaussian model
+    gal_phz = glass.galaxies.gaussian_phz(gal_z, sigma_z0)
+
+    # attach tomographic bin IDs to galaxies, based on photometric redshifts
+    gal_zbin = np.digitize(gal_phz, np.unique(zbins)) - 1
 
     # generate galaxy ellipticities from the chosen distribution
-    gal_eps = glass.shapes.ellipticity_intnorm(gal_siz, sigma_e)
+    gal_eps = glass.shapes.ellipticity_intnorm(gal_count, sigma_e)
 
     # apply the shear fields to the ellipticities
     gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
                                           kappa_i, gamm1_i, gamm2_i)
 
     # make a mini-catalogue for the new rows
-    rows = np.empty(gal_siz, dtype=catalogue.dtype)
+    rows = np.empty(gal_count, dtype=catalogue.dtype)
     rows['RA'] = gal_lon
     rows['DEC'] = gal_lat
-    rows['TRUE_Z'] = gal_z
+    rows['Z_TRUE'] = gal_z
+    rows['PHZ'] = gal_phz
+    rows['ZBIN'] = gal_zbin
     rows['G1'] = gal_she.real
     rows['G2'] = gal_she.imag
-    rows['TOMO_ID'] = gal_pop
 
     # add the new rows to the catalogue
     catalogue = np.append(catalogue, rows)
 
-print(f'Total Number of galaxies sampled: {len(catalogue["TRUE_Z"]):,}')
+print(f'Total number of galaxies sampled: {len(catalogue):,}')
 
 # %%
 # Catalogue checks
@@ -202,14 +184,18 @@ print(f'Total Number of galaxies sampled: {len(catalogue["TRUE_Z"]):,}')
 # Here we can perform some simple checks at the catalogue level to
 # see how our simulation performed.
 
+# split dndz using the same Gaussian error model assumed in the sampling
+tomo_nz = glass.observations.tomo_nz_gausserr(z, dndz, sigma_z0, zbins)
+
 # redshift distribution of tomographic bins & input distributions
 plt.figure()
 plt.title('redshifts in catalogue')
 plt.ylabel('dN/dz - normalised')
 plt.xlabel('z')
-for i in range(0, 10):
-    plt.hist(catalogue['TRUE_Z'][catalogue['TOMO_ID'] == i], histtype='stepfilled', edgecolor='none', alpha=0.5, bins=50, density=1, label=f'cat. bin {i}')
-for i in range(0, 10):
+for i in range(nbins):
+    in_bin = (catalogue['ZBIN'] == i)
+    plt.hist(catalogue['Z_TRUE'][in_bin], histtype='stepfilled', edgecolor='none', alpha=0.5, bins=50, density=1, label=f'cat. bin {i}')
+for i in range(nbins):
     plt.plot(z, (tomo_nz[i]/n_arcmin2)*nbins, alpha=0.5, label=f'inp. bin {i}')
 plt.plot(z, dndz/n_arcmin2*nbins, ls='--', c='k')
 plt.legend(ncol=2)
