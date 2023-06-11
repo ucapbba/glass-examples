@@ -41,7 +41,7 @@ import glass.shapes
 import glass.lensing
 import glass.galaxies
 import glass.observations
-import glass.camb
+import glass.ext.camb
 
 
 # cosmology for the simulation
@@ -69,7 +69,7 @@ zb = glass.shells.distance_grid(cosmo, 0., 3., dx=200.)
 ws = glass.shells.tophat_windows(zb)
 
 # compute the angular matter power spectra of the shells with CAMB
-cls = glass.camb.matter_cls(pars, lmax, ws)
+cls = glass.ext.camb.matter_cls(pars, lmax, ws)
 
 # compute Gaussian cls for lognormal fields for 3 correlated shells
 # putting nside here means that the HEALPix pixel window function is applied
@@ -161,7 +161,7 @@ for i, delta_i in enumerate(matter):
 
         # apply the shear fields to the ellipticities
         gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
-                                            kappa_i, gamm1_i, gamm2_i)
+                                              kappa_i, gamm1_i, gamm2_i)
 
         # make a mini-catalogue for the new rows
         rows = np.empty(gal_count, dtype=catalogue.dtype)

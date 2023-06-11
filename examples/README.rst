@@ -26,8 +26,8 @@ and for the cosmological background.  Make sure you have CAMB installed::
     $ python -c 'import camb'  # should not give an error
 
 If you want to compute the angular matter power spectra in the examples, you
-need the `glass-camb` package::
+need the `glass.ext.camb` package::
 
-    $ pip install glass-camb
+    $ pip install glass.ext.camb
 
 __ https://camb.readthedocs.io/
