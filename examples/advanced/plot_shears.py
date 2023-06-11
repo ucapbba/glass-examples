@@ -129,21 +129,21 @@ for i, delta_i in enumerate(matter):
     ngal = np.trapz(dndz_i, z_i)
 
     # generate galaxy positions uniformly over the sphere
-    gal_lon, gal_lat, gal_count = glass.points.uniform_positions(ngal)
+    for gal_lon, gal_lat, gal_count in glass.points.uniform_positions(ngal):
 
-    # generate galaxy ellipticities from the chosen distribution
-    gal_eps = glass.shapes.ellipticity_intnorm(gal_count, sigma_e)
+        # generate galaxy ellipticities from the chosen distribution
+        gal_eps = glass.shapes.ellipticity_intnorm(gal_count, sigma_e)
 
-    # apply the shear fields to the ellipticities
-    gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
-                                          kappa_i, gamm1_i, gamm2_i)
+        # apply the shear fields to the ellipticities
+        gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
+                                            kappa_i, gamm1_i, gamm2_i)
 
-    # map the galaxy shears to a HEALPix map; this is opaque but works
-    gal_pix = hp.ang2pix(nside, gal_lon, gal_lat, lonlat=True)
-    s = np.argsort(gal_pix)
-    pix, start, count = np.unique(gal_pix[s], return_index=True, return_counts=True)
-    num[pix] += count
-    she[pix] += list(map(np.sum, np.split(gal_she[s], start[1:])))
+        # map the galaxy shears to a HEALPix map; this is opaque but works
+        gal_pix = hp.ang2pix(nside, gal_lon, gal_lat, lonlat=True)
+        s = np.argsort(gal_pix)
+        pix, start, count = np.unique(gal_pix[s], return_index=True, return_counts=True)
+        num[pix] += count
+        she[pix] += list(map(np.sum, np.split(gal_she[s], start[1:])))
 
 # %%
 # Analysis

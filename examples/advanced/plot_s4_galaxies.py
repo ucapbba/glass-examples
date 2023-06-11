@@ -145,36 +145,36 @@ for i, delta_i in enumerate(matter):
     ngal = np.trapz(dndz_i, z_i)
 
     # generate galaxy positions from the matter density contrast
-    gal_lon, gal_lat, gal_count = glass.points.positions_from_delta(ngal, delta_i, bias, vis)
+    for gal_lon, gal_lat, gal_count in glass.points.positions_from_delta(ngal, delta_i, bias, vis):
 
-    # generate random redshifts from the provided nz
-    gal_z = glass.galaxies.redshifts_from_nz(gal_count, z_i, dndz_i)
+        # generate random redshifts from the provided nz
+        gal_z = glass.galaxies.redshifts_from_nz(gal_count, z_i, dndz_i)
 
-    # generator photometric redshifts using a Gaussian model
-    gal_phz = glass.galaxies.gaussian_phz(gal_z, sigma_z0)
+        # generator photometric redshifts using a Gaussian model
+        gal_phz = glass.galaxies.gaussian_phz(gal_z, sigma_z0)
 
-    # attach tomographic bin IDs to galaxies, based on photometric redshifts
-    gal_zbin = np.digitize(gal_phz, np.unique(zbins)) - 1
+        # attach tomographic bin IDs to galaxies, based on photometric redshifts
+        gal_zbin = np.digitize(gal_phz, np.unique(zbins)) - 1
 
-    # generate galaxy ellipticities from the chosen distribution
-    gal_eps = glass.shapes.ellipticity_intnorm(gal_count, sigma_e)
+        # generate galaxy ellipticities from the chosen distribution
+        gal_eps = glass.shapes.ellipticity_intnorm(gal_count, sigma_e)
 
-    # apply the shear fields to the ellipticities
-    gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
-                                          kappa_i, gamm1_i, gamm2_i)
+        # apply the shear fields to the ellipticities
+        gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
+                                            kappa_i, gamm1_i, gamm2_i)
 
-    # make a mini-catalogue for the new rows
-    rows = np.empty(gal_count, dtype=catalogue.dtype)
-    rows['RA'] = gal_lon
-    rows['DEC'] = gal_lat
-    rows['Z_TRUE'] = gal_z
-    rows['PHZ'] = gal_phz
-    rows['ZBIN'] = gal_zbin
-    rows['G1'] = gal_she.real
-    rows['G2'] = gal_she.imag
+        # make a mini-catalogue for the new rows
+        rows = np.empty(gal_count, dtype=catalogue.dtype)
+        rows['RA'] = gal_lon
+        rows['DEC'] = gal_lat
+        rows['Z_TRUE'] = gal_z
+        rows['PHZ'] = gal_phz
+        rows['ZBIN'] = gal_zbin
+        rows['G1'] = gal_she.real
+        rows['G2'] = gal_she.imag
 
-    # add the new rows to the catalogue
-    catalogue = np.append(catalogue, rows)
+        # add the new rows to the catalogue
+        catalogue = np.append(catalogue, rows)
 
 print(f'Total number of galaxies sampled: {len(catalogue):,}')
 

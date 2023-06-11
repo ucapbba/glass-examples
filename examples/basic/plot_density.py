@@ -93,17 +93,17 @@ for i, delta_i in enumerate(matter):
     ngal = np.trapz(dndz_i, z_i)
 
     # simulate positions from matter density
-    gal_lon, gal_lat, gal_count = glass.points.positions_from_delta(ngal, delta_i)
+    for gal_lon, gal_lat, gal_count in glass.points.positions_from_delta(ngal, delta_i):
 
-    # sample redshifts uniformly in shell
-    gal_z = glass.galaxies.redshifts_from_nz(gal_count, ws[i].za, ws[i].wa)
+        # sample redshifts uniformly in shell
+        gal_z = glass.galaxies.redshifts_from_nz(gal_count, ws[i].za, ws[i].wa)
 
-    # add counts to cube
-    z1 = gal_z*np.cos(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))
-    z2 = gal_z*np.sin(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))
-    z3 = gal_z*np.sin(np.deg2rad(gal_lat))
-    (i, j, k), c = np.unique(np.searchsorted(zcub[1:], [z1, z2, z3]), axis=1, return_counts=True)
-    cube[i, j, k] += c
+        # add counts to cube
+        z1 = gal_z*np.cos(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))
+        z2 = gal_z*np.sin(np.deg2rad(gal_lon))*np.cos(np.deg2rad(gal_lat))
+        z3 = gal_z*np.sin(np.deg2rad(gal_lat))
+        (i, j, k), c = np.unique(np.searchsorted(zcub[1:], [z1, z2, z3]), axis=1, return_counts=True)
+        cube[i, j, k] += c
 
 
 # %%
