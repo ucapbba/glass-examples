@@ -2,5 +2,5 @@ numpy
 healpy
 camb
 matplotlib
-git+https://github.com/glass-dev/glass.git
+git+https://github.com/ucapbba/glass.git@156-FITS
 git+https://github.com/glass-dev/glass-camb.git
