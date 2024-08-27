@@ -41,7 +41,7 @@ plt.show()
 
 print("Creating the catalog " + catalogName)
 # open a glass defined write context with a HDU extension name 'CATALOG'
-with write_context(catalogName, ext="CATALOG") as out:
+with write_catalog(catalogName, ext="CATALOG") as out:
     # go through the shells and simulate
     for i, delta, shell in zip(count(), matter, shells):
         z_i, dndz_i = restrict(z, dndz, ws[i])
