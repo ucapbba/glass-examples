@@ -19,7 +19,7 @@ from glass.galaxies import galaxy_shear, redshifts_from_nz, gaussian_phz
 from glass.points import positions_from_delta
 from glass.shapes import ellipticity_intnorm
 from glass.lensing import from_convergence
-from glass.user import write_context
+from glass.user import write_catalog
 from glass.shells import restrict
 from glass.observations import vmap_galactic_ecliptic, tomo_nz_gausserr
 from DefineVariables import get_common_data, get_glass_data
