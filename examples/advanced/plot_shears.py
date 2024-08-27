@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 
 # use the CAMB cosmology that generated the matter power spectra
 import camb
-from cosmology import Cosmology
 
 # GLASS modules: cosmology and everything in the glass namespace
 import glass.shells
@@ -32,49 +31,12 @@ import glass.shapes
 import glass.lensing
 import glass.galaxies
 from glass.core.constants import ARCMIN2_SPHERE
+from DefineVariables import get_common_data, get_glass_data
 
 
-# cosmology for the simulation
-h = 0.7
-Oc = 0.25
-Ob = 0.05
-
-# basic parameters of the simulation
-nside = lmax = 256
-
-# set up CAMB parameters for matter angular power spectrum
-pars = camb.set_params(H0=100*h, omch2=Oc*h**2, ombh2=Ob*h**2,
-                       NonLinear=camb.model.NonLinear_both)
-
-# get the cosmology from CAMB
-cosmo = Cosmology.from_camb(pars)
-
-# shells of 200 Mpc in comoving distance spacing
-zb = glass.shells.distance_grid(cosmo, 0., 1., dx=200.)
-
-# tophat window function for shells
-ws = glass.shells.tophat_windows(zb)
-
-# load the angular matter power spectra previously computed with CAMB
-cls = np.load('../basic/cls.npy')
-
-# %%
-# Matter
-# ------
-
-# compute Gaussian cls for lognormal fields for 3 correlated shells
-# putting nside here means that the HEALPix pixel window function is applied
-gls = glass.fields.lognormal_gls(cls, nside=nside, lmax=lmax, ncorr=3)
-
-# generator for lognormal matter fields
-matter = glass.fields.generate_lognormal(gls, nside, ncorr=3)
-
-# %%
-# Lensing
-# -------
-
-# this will compute the convergence field iteratively
-convergence = glass.lensing.MultiPlaneConvergence(cosmo)
+# Import common variables from create_FITS_helper module
+lmax, nside, sigma_e, sigma_z0, beff, binlabels, catalog, rng, n_arcmin2 = get_common_data()
+pars, matter, shells, convergence, ws, z, dndz, zbins = get_glass_data(loadCls=True)
 
 # %%
 # Galaxy
@@ -136,7 +98,7 @@ for i, delta_i in enumerate(matter):
 
         # apply the shear fields to the ellipticities
         gal_she = glass.galaxies.galaxy_shear(gal_lon, gal_lat, gal_eps,
-                                            kappa_i, gamm1_i, gamm2_i)
+                                              kappa_i, gamm1_i, gamm2_i)
 
         # map the galaxy shears to a HEALPix map; this is opaque but works
         gal_pix = hp.ang2pix(nside, gal_lon, gal_lat, lonlat=True)
